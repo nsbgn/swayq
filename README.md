@@ -10,9 +10,9 @@ allow you to do your thing before sending back a command.
 
 But why not use a language tailor-made for JSON transformations 
 directly: [jq]? This allows you to closely follow i3's original 
-[commands][cmd] and [IPC documentation][ipc]. You get the convenience of 
-a script while staying closer to the speed of a compiled program --- and 
-the result is often much terser than either.
+[commands][cmd] and [IPC spec][ipc]. You get the convenience of a script 
+while staying closer to the speed of a compiled program --- and the 
+result is often much terser than either.
 
     # You can listen to events…
     i3jq 'subscribe(["window"]) | .container.name // empty'
@@ -21,16 +21,16 @@ the result is often much terser than either.
     i3jq 'get_tree | find(.app_id == "X") | run_command("[con_id=\(.id)] mark X")'
 
 This repository contains the `i3jq` application, which adds internal 
-functions for IPC on top of [gojq], such as `subscribe` and `get_tree`. 
-It also offers example [jq] filters to achieve some useful tasks, which 
-you can find in the [`contrib/`](./contrib/) directory.
+functions corresponding to i3's [IPC spec][ipc] on top of 
+[`gojq`][gojq], such as `subscribe` and `run_command`. It also offers 
+example [jq] filters to achieve some useful tasks, which you can find in 
+the [`contrib/`](./contrib/) directory.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 
-binary offers some advantages, like readable code, keeping track of 
-state, and querying for information only when necessary. Moreover, you 
-will presumably run these commands quite often, so a low footprint is 
-desirable.
+binary offers some advantages, like readable code and querying for 
+information only when necessary. Moreover, you will presumably run these 
+commands quite often, so a low footprint is desirable.
 
 [i3]: https://i3wm.org/
 [ipc]: https://i3wm.org/docs/ipc.html
