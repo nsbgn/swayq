@@ -15,23 +15,7 @@ type i3jqModuleLoader struct {
 }
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
-	m, _ := gojq.Parse(`
-		def run_command(payload): _i3jq(0; payload);
-		def get_workspaces: _i3jq(1);
-		def subscribe(payload): _i3jq(2; payload | tostring; true);
-		def get_outputs: _i3jq(3);
-		def get_tree: _i3jq(4);
-		def get_marks: _i3jq(5);
-		def get_bar_config(payload): _i3jq(6; payload);
-		def get_bar_config: get_bar_config("");
-		def get_version: _i3jq(7);
-		def get_binding_modes: _i3jq(8);
-		def get_config: _i3jq(9);
-		def send_tick: _i3jq(10);
-		def sync(payload): _i3jq(11; payload);
-		def get_binding_state(payload): _i3jq(12; payload);
-	`)
-
+	m, _ := l.LoadModule("i3jq/ipc")
 	modules := make([]*gojq.Query, 1)
 	modules[0] = m
 	if l.base != nil {
@@ -41,6 +25,17 @@ func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 }
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
+	switch(name){
+	case "i3jq/ipc":
+		return &gojq.Query{FuncDefs: ipcFuncDefs}, nil
+	case "i3jq/cmd":
+		return &gojq.Query{FuncDefs: cmdFuncDefs}, nil
+	case "i3jq/tree":
+		return &gojq.Query{FuncDefs: treeFuncDefs}, nil
+	case "i3jq/util":
+		return &gojq.Query{FuncDefs: utilFuncDefs}, nil
+	}
+
 	path, err := findModulePath(name)
 	if err != nil {
 		return nil, err

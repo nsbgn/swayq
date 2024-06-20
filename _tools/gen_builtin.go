@@ -48,14 +48,10 @@ func run(name, input, output string) error {
 	if err != nil {
 		return err
 	}
-	fds := make(map[string][]*gojq.FuncDef)
 	for _, fd := range q.FuncDefs {
 		fd.Minify()
-		fds[fd.Name] = append(fds[fd.Name], fd)
 	}
-	fds["_assign"] = nil
-	fds["_modify"] = nil
-	t, err := astgen.Build(fds)
+	t, err := astgen.Build(q.FuncDefs)
 	if err != nil {
 		return err
 	}
@@ -99,7 +95,6 @@ func printCompositeLit(out *strings.Builder, t *ast.CompositeLit) error {
 		 	r := regexp.MustCompile(fmt.Sprintf(`(Term{Type): %d\b`, termType))
 		 	str = r.ReplaceAllString(str, fmt.Sprintf("$1: %#v", termType))
 		 }
-		//out.WriteString(strings.ReplaceAll(str, "gojq.", ""))
 		out.WriteString(str)
 		out.WriteString(",")
 	}

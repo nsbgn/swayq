@@ -17,7 +17,7 @@ clean:
 	go clean
 
 .PRECIOUS: builtin_%.go
-builtin_%.go: builtin_%.jq
+builtin_%.go: builtin_%.jq _tools/gen_builtin.go
 	go run _tools/gen_builtin.go -n $(patsubst builtin_%.go,%,$@) -i $< -o $@
 
 %: %.go $(wildcard *.go) ${BUILTIN_GO}
