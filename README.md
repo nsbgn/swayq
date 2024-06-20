@@ -22,7 +22,8 @@ the result is often much terser than either.
 
 This repository contains the `i3jq` application, which adds internal 
 functions for IPC on top of [gojq], such as `subscribe` and `get_tree`. 
-It also offers example [jq] filters to achieve some useful tasks.
+It also offers example [jq] filters to achieve some useful tasks, which 
+you can find in the [`contrib/`](./contrib/) directory.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 
