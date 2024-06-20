@@ -13,5 +13,5 @@ clean:
 	rm -rf $(BIN)
 	go clean
 
-%: %.go $(filter-out handler.go, $(wildcard *.go))
+%: %.go $(wildcard *.go)
 	go build -ldflags=$(LDFLAGS) -o $@ $^
