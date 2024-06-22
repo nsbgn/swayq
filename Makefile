@@ -3,7 +3,7 @@ BIN := i3jq
 REVISION = $(shell git rev-parse --short HEAD)
 LDFLAGS = "-s -w -X 'main.Version=$(REVISION)'"
 
-BUILTIN_JQ = $(wildcard builtin_*.jq)
+BUILTIN_JQ = $(wildcard builtin*.jq)
 
 .PHONY: all
 all: build

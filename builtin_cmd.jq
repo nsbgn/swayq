@@ -1,5 +1,8 @@
 module {name: "cmd"};
 
+import "i3jq/tree" as tree;
+import "i3jq/ipc" as ipc;
+
 # Simple commands
 
 # Swap the input container with the given one
@@ -7,7 +10,7 @@ def swap($anchor):
   "[con_id=\(.id)] swap container with con_id \($anchor.id)";
 
 def focus:
-  window | "[con_id=\(.id)] focus";
+  tree::window | "[con_id=\(.id)] focus";
 
 def mark(marks):
   ["[con_id=\(.id)] mark --add \(marks)"] | join("; ");

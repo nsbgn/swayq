@@ -1,18 +1,21 @@
 module {name: "tree"};
 
+import "i3jq/util" as util;
+
+
 # Predicates on containers
 
 def is_marked($mark):
-  .marks as $marks | $mark | among($marks[]);
+  .marks as $marks | $mark | util::among($marks[]);
 
 def is_horizontal:
-  .layout | among("splith", "tabbed");
+  .layout | util::among("splith", "tabbed");
 
 def is_vertical:
-  .layout | among("splitv", "stacked");
+  .layout | util::among("splitv", "stacked");
 
 def is_pile:
-  .layout | among("tabbed", "stacked");
+  .layout | util::among("tabbed", "stacked");
 
 def is_leaf:
   .nodes == [] and .layout == "none";
@@ -40,10 +43,10 @@ def descend_focus:
 
 # Descend one level into a neighbour of the nth focused tiling node
 def descend_neighbour($offset; $wrap; $n):
-  nth($n; .focus[] as $id | .nodes | indexl(.id == $id) // empty) as $i
+  nth($n; .focus[] as $id | .nodes | util::indexl(.id == $id) // empty) as $i
   | ($i + $offset) as $j
   | .nodes
-  | .[if $wrap then wrap($j) else clip($j) end];
+  | .[if $wrap then util::wrap($j) else util::clip($j) end];
 
 # Descend one level into a neighbour of the most focused tiling node
 def descend_neighbour($offset; $wrap):

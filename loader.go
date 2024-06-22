@@ -16,7 +16,7 @@ type i3jqModuleLoader struct {
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	modules := make([]*gojq.Query, 1)
-	modules[0] = ipcQuery
+	modules[0] = builtinQuery
 	if l.base != nil {
 		modules = append(modules, l.base)
 	}
@@ -25,6 +25,8 @@ func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 	switch(name){
+	case "i3jq/ipc":
+		return ipcQuery, nil
 	case "i3jq/cmd":
 		return cmdQuery, nil
 	case "i3jq/tree":
