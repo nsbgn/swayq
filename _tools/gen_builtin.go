@@ -1,4 +1,4 @@
-// This tool has been lifted and adapted from:
+// This tool has been adapted from:
 // <https://github.com/itchyny/gojq/blob/0607aa5af33a4f980e3e769a1820db80e3cc7b23/_tools/gen_builtin.go>
 
 package main
@@ -6,7 +6,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go/ast"
 	"go/printer"
 	"go/token"
 	"os"
@@ -44,6 +43,7 @@ func run(name, input, output string) error {
 	if err != nil {
 		return err
 	}
+
 	q, err := gojq.Parse(string(cnt))
 	if err != nil {
 		return err
@@ -51,15 +51,12 @@ func run(name, input, output string) error {
 	for _, fd := range q.FuncDefs {
 		fd.Minify()
 	}
-	t, err := astgen.Build(q.FuncDefs)
-	if err != nil {
-		return err
-	}
+	str, err := formatQuery(q)
+
 	var sb strings.Builder
 	sb.WriteString("\nvar " + name + "FuncDefs = ")
-	if err := printCompositeLit(&sb, t.(*ast.CompositeLit)); err != nil {
-		return err
-	}
+	sb.WriteString(*str)
+
 	out := os.Stdout
 	if output != "" {
 		f, err := os.Create(output)
@@ -73,31 +70,30 @@ func run(name, input, output string) error {
 	return err
 }
 
-func printCompositeLit(out *strings.Builder, t *ast.CompositeLit) error {
-	err := printer.Fprint(out, token.NewFileSet(), t.Type)
+func formatQuery(q *gojq.Query) (*string, error) {
+	// Get abstract syntax tree of query
+	ast, err := astgen.Build(q)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	out.WriteString("{")
-	for _, kv := range t.Elts {
-		out.WriteString("\n\t\t")
-		var sb strings.Builder
-		err = printer.Fprint(&sb, token.NewFileSet(), kv)
-		if err != nil {
-			return err
-		}
-		str := sb.String()
-		 for op := gojq.OpPipe; op <= gojq.OpUpdateAlt; op++ {
-		 	r := regexp.MustCompile(fmt.Sprintf(`\b((?:Update)?Op): %d\b`, op))
-		 	str = r.ReplaceAllString(str, fmt.Sprintf("$1: %#v", op))
-		 }
-		 for termType := gojq.TermTypeIdentity; termType <= gojq.TermTypeQuery; termType++ {
-		 	r := regexp.MustCompile(fmt.Sprintf(`(Term{Type): %d\b`, termType))
-		 	str = r.ReplaceAllString(str, fmt.Sprintf("$1: %#v", termType))
-		 }
-		out.WriteString(str)
-		out.WriteString(",")
+
+	// Turn AST into a string
+	var sb strings.Builder
+	err = printer.Fprint(&sb, token.NewFileSet(), ast)
+	if err != nil {
+		return nil, err
 	}
-	out.WriteString("\n\t}\n")
-	return nil
+	str := sb.String()
+
+	// Convert integers to proper enums
+	for op := gojq.OpPipe; op <= gojq.OpUpdateAlt; op++ {
+		re := regexp.MustCompile(fmt.Sprintf(`\b((?:Update)?Op): %d\b`, op))
+		str = re.ReplaceAllString(str, fmt.Sprintf("$1: %#v", op))
+	}
+	for t := gojq.TermTypeIdentity; t <= gojq.TermTypeQuery; t++ {
+		re := regexp.MustCompile(fmt.Sprintf(`(Term{Type): %d\b`, t))
+		str = re.ReplaceAllString(str, fmt.Sprintf("$1: %#v", t))
+	}
+
+	return &str, nil
 }
