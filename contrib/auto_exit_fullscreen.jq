@@ -1,11 +1,14 @@
 # Automatically exit full screen mode when a new window opens
 # Inspired by <https://old.reddit.com/r/swaywm/comments/vclww6/exit_fullscreen_when_new_window_opens/>
 
-subscribe(["window"])
+import "i3jq/ipc" as ipc;
+import "i3jq/tree" as tree;
+
+ipc::subscribe(["window"])
 | if .change == "new" then
-    get_tree
-    | window
+    ipc::get_tree
+    | tree::window
     | if .fullscreen_mode then
-        run_command("[con_id=\(.id)] fullscreen disable")
+        ipc::run_command("[con_id=\(.id)] fullscreen disable")
       end
-  end;
+  end
