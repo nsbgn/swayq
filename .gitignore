@@ -1,2 +1,2 @@
 i3jq
-builtin_*.go
+builtin.go

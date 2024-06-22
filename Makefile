@@ -4,7 +4,6 @@ REVISION = $(shell git rev-parse --short HEAD)
 LDFLAGS = "-s -w -X 'main.Version=$(REVISION)'"
 
 BUILTIN_JQ = $(wildcard builtin_*.jq)
-BUILTIN_GO = $(patsubst %.jq,%.go,${BUILTIN_JQ})
 
 .PHONY: all
 all: build
@@ -17,9 +16,9 @@ clean:
 	rm -rf $(BIN)
 	go clean
 
-.PRECIOUS: builtin_%.go
-builtin_%.go: builtin_%.jq _tools/gen_builtin.go
-	$(GO) run _tools/gen_builtin.go -i $< -o $@
+.PRECIOUS: builtin.go
+builtin.go: _tools/gen_builtin.go ${BUILTIN_JQ}
+	$(GO) run $^
 
-%: %.go $(wildcard *.go) ${BUILTIN_GO}
+%: %.go $(wildcard *.go) builtin.go
 	$(GO) build -ldflags=$(LDFLAGS) -o $@ $^
