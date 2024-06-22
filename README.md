@@ -5,8 +5,8 @@ change without warning.*
 
 To programmatically control the window manager [i3] or its sibling 
 [Sway][sway], you would usually use a library like [go-i3] or [i3ipc]. 
-The library would start out by asking for the layout tree translate it 
-to a native structure, and then allow you to do your thing.
+The library would send and receive some JSON on your behalf, translate 
+it to a native structure, and allow you to do your thing.
 
 But why not use a language already tailor-made for JSON transformations: 
 [jq]? This allows you to closely follow i3's original [commands][cmd] 
