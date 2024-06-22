@@ -15,9 +15,8 @@ type i3jqModuleLoader struct {
 }
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
-	m, _ := l.LoadModule("i3jq/ipc")
 	modules := make([]*gojq.Query, 1)
-	modules[0] = m
+	modules[0] = ipcQuery
 	if l.base != nil {
 		modules = append(modules, l.base)
 	}
@@ -26,14 +25,12 @@ func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 	switch(name){
-	case "i3jq/ipc":
-		return &gojq.Query{FuncDefs: ipcFuncDefs}, nil
 	case "i3jq/cmd":
-		return &gojq.Query{FuncDefs: cmdFuncDefs}, nil
+		return cmdQuery, nil
 	case "i3jq/tree":
-		return &gojq.Query{FuncDefs: treeFuncDefs}, nil
+		return treeQuery, nil
 	case "i3jq/util":
-		return &gojq.Query{FuncDefs: utilFuncDefs}, nil
+		return utilQuery, nil
 	}
 
 	path, err := findModulePath(name)
