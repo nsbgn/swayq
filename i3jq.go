@@ -58,26 +58,29 @@ func main() {
 	if query != nil {
 		code, err := gojq.Compile(query,
 			gojq.WithModuleLoader(&loader),
-			gojq.WithIterFunction("_i3jq", 1, 3, func(_ any, xs []any) gojq.Iter {
+			gojq.WithIterFunction("_i3jq", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
-				payload, ok1 := "", true
-				if len(xs) >= 2 {
-					payload, ok1 = xs[1].(string)
-				}
-				keep_alive, ok2 := false, true
-				if len(xs) >= 3 {
-					keep_alive, ok2 = xs[2].(bool)
+				if !ok0 {
+					return gojq.NewIter(errors.New("messageType param must be an int"))
 				}
 
-				if ok0 && ok1 && ok2 {
-					iter, err := i3jq_ipc(messageType, &payload, keep_alive)
-					if err != nil {
-						return gojq.NewIter(err)
-					} else {
-						return iter
-					}
+				keepAlive, ok2 := xs[2].(bool)
+				if !ok2 {
+					return gojq.NewIter(errors.New("keepAlive param must be a bool"))
+				}
+
+				var payload *string = nil
+				if str, ok := xs[1].(string); ok {
+					payload = &str
+				} else if xs[1] != nil {
+					return gojq.NewIter(errors.New("payload param must be a string"))
+				}
+
+				iter, err := i3jq_ipc(messageType, payload, keepAlive)
+				if err != nil {
+					return gojq.NewIter(err)
 				} else {
-					return gojq.NewIter(errors.New("arguments to _i3jq must be of type (int, string, bool)"))
+					return iter
 				}
 			}),
 		)
