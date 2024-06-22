@@ -19,7 +19,7 @@ clean:
 
 .PRECIOUS: builtin_%.go
 builtin_%.go: builtin_%.jq _tools/gen_builtin.go
-	$(GO) run _tools/gen_builtin.go -n $(patsubst builtin_%.go,%,$@) -i $< -o $@
+	$(GO) run _tools/gen_builtin.go -i $< -o $@
 
 %: %.go $(wildcard *.go) ${BUILTIN_GO}
 	$(GO) build -ldflags=$(LDFLAGS) -o $@ $^

@@ -1,3 +1,5 @@
+module {name: "util"};
+
 # Utility filters
 
 def assert($condition):

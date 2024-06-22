@@ -1,3 +1,5 @@
+module {name: "cmd"};
+
 # Simple commands
 
 # Swap the input container with the given one

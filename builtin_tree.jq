@@ -1,3 +1,5 @@
+module {name: "tree"};
+
 # Predicates on containers
 
 def is_marked($mark):

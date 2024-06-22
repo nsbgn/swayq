@@ -27,23 +27,22 @@ import (
 `
 
 func main() {
-	var name, input, output string
-	flag.StringVar(&name, "n", "", "name")
+	var input, output string
 	flag.StringVar(&input, "i", "", "input file")
 	flag.StringVar(&output, "o", "", "output file")
 	flag.Parse()
-	if err := run(name, input, output); err != nil {
+	if err := run(input, output); err != nil {
 		fmt.Fprint(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(name, input, output string) error {
+func run(input, output string) error {
 	cnt, err := os.ReadFile(input)
 	if err != nil {
 		return err
 	}
-
+	
 	q, err := gojq.Parse(string(cnt))
 	if err != nil {
 		return err
@@ -52,10 +51,6 @@ func run(name, input, output string) error {
 		fd.Minify()
 	}
 	str, err := formatQuery(q)
-
-	var sb strings.Builder
-	sb.WriteString("\nvar " + name + "FuncDefs = ")
-	sb.WriteString(*str)
 
 	out := os.Stdout
 	if output != "" {
@@ -66,8 +61,19 @@ func run(name, input, output string) error {
 		defer f.Close()
 		out = f
 	}
-	_, err = fmt.Fprintf(out, fileFormat, sb.String())
+	_, err = fmt.Fprintf(out, fileFormat, *str)
 	return err
+}
+
+func getName(q *gojq.Query) *string {
+	if q.Meta != nil {
+		for _, kv := range q.Meta.KeyVals {
+			if kv.Key == "name" {
+				return &kv.Val.Str
+			}
+		}
+	}
+	return nil
 }
 
 func formatQuery(q *gojq.Query) (*string, error) {
@@ -79,6 +85,10 @@ func formatQuery(q *gojq.Query) (*string, error) {
 
 	// Turn AST into a string
 	var sb strings.Builder
+	var name = getName(q)
+	sb.WriteString("\nvar ")
+	sb.WriteString(*name)
+	sb.WriteString("Query = ")
 	err = printer.Fprint(&sb, token.NewFileSet(), ast)
 	if err != nil {
 		return nil, err

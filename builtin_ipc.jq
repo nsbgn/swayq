@@ -1,3 +1,8 @@
+module {
+  name: "ipc",
+  description: "Filters for inter-process communication."
+};
+
 def run_command(payload): _i3jq(0; payload);
 def get_workspaces: _i3jq(1);
 def subscribe(payload): _i3jq(2; payload | tostring; true);
