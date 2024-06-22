@@ -4,35 +4,55 @@
 change without warning.*
 
 To programmatically control the window manager [i3] or its sibling 
-compositor [sway], you would usually use a library like [go-i3] or 
-[i3ipc]. At the beginning, the library would ask for the layout tree in 
-JSON format, translate it to structures native to your language, and 
-allow you to do your thing before sending back a command.
+[Sway][sway], you would usually use a library like [go-i3] or [i3ipc]. 
+The library would start out by asking for the layout tree translate it 
+to a native structure, and then allow you to do your thing.
 
 But why not use a language already tailor-made for JSON transformations: 
 [jq]? This allows you to closely follow i3's original [commands][cmd] 
 and [IPC spec][ipc]. You get the convenience of a script while staying 
-closer to the speed of a compiled program --- and the result is often 
-much terser than either.
-
-    # You can listen to events…
-    i3jq 'ipc::subscribe(["window"]) | .container.name // empty'
-
-    # …or execute commands.
-    i3jq 'ipc::get_tree | tree::find(.app_id == "X") | ipc::run_command("[con_id=\(.id)] mark X")'
+closer to the speed of a compiled program — and the result is often much 
+terser than either!
 
 This repository contains the `i3jq` application, which adds internal 
 functions corresponding to i3's [IPC spec][ipc] on top of 
-[`gojq`][gojq], such as `subscribe` and `run_command`. It also offers 
-modules for common tasks, such as navigating the layout tree. Finally, 
-in the [`contrib/`](./contrib/) directory, you will find filters to 
-achieve some useful behaviour.
+[`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`. It also 
+offers modules for common tasks, such as navigating the layout tree. 
+Finally, in the [`contrib/`](./contrib/) directory, you will find 
+filters to achieve some useful behaviour.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 
 binary offers some advantages, like readable code and querying for 
 information only when necessary. Moreover, you will presumably run these 
 commands quite often, so a low footprint is desirable.
+
+
+## Installation
+
+Make sure you have at least [Go][go] 1.21 installed. Then run:
+
+    make && sudo make install
+
+
+## Usage
+
+You can write a filter to execute a command:
+
+    i3jq 'ipc::get_tree | tree::find(.app_id == "X") | ipc::run_command("[con_id=\(.id)] mark X")'
+
+... or to listen to events:
+
+    i3jq 'ipc::subscribe(["window"]) | .container.name // empty'
+
+To run something within Sway or i3, add a line like this to your 
+configuration:
+
+    exec i3jq -f contrib/auto_exit_fullscreen.jq
+
+Please view the `builtin_*.jq` filters for detailed information on the 
+available modules and the functions defined within.
+
 
 [i3]: https://i3wm.org/
 [ipc]: https://i3wm.org/docs/ipc.html
