@@ -101,7 +101,12 @@ func i3jq_ipc(msgType int, msg *string, keep_alive bool) (*connection, error) {
 		return nil, err
 	}
 	c := connection{conn, keep_alive, 0}
-	err = c.send(message{uint32(msgType), []byte(*msg)})
+	t := uint32(msgType)
+	if msg == nil {
+		err = c.send(message{Type: t})
+	} else {
+		err = c.send(message{Type: t, Payload: []byte(*msg)})
+	}
 	if err != nil {
 		return nil, err
 	}
