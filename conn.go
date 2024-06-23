@@ -4,7 +4,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"net"
+	"log"
 )
 
 var endian = binary.NativeEndian
@@ -94,8 +96,27 @@ func (c *connection) Next() (any, bool) {
 	return json, true
 }
 
-func i3jq_ipc(msgType int, msg *string, keep_alive bool) (*connection, error) {
+func get_socket() string {
 	socket := os.Getenv("SWAYSOCK")
+	if socket != "" {
+		return socket
+	}
+
+	socket = os.Getenv("I3SOCK")
+	if socket != "" {
+		return socket
+	}
+
+	out, err := exec.Command("i3", "--get-socketpath").Output()
+	if err != nil {
+		log.Fatalln("could not determine i3 socket")
+	}
+	return string(out)
+}
+
+var socket = get_socket()
+
+func i3jq_ipc(msgType int, msg *string, keep_alive bool) (*connection, error) {
 	conn, err := net.Dial("unix", socket)
 	if err != nil {
 		return nil, err
