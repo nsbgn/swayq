@@ -57,7 +57,8 @@ func getName(q *gojq.Query) *string {
 			}
 		}
 	}
-	return nil
+	str := "unnamed"
+	return &str
 }
 
 func formatQuery(q *gojq.Query) (*string, error) {
