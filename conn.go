@@ -7,7 +7,7 @@ import (
 	"net"
 )
 
-var endian = binary.LittleEndian // binary.NativeEndian from 1.21.0
+var endian = binary.NativeEndian
 
 var magic = [6]byte{'i', '3', '-', 'i', 'p', 'c'}
 
