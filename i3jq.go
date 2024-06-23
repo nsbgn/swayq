@@ -52,7 +52,7 @@ func main() {
 	} else if query_file != nil {
 		query = query_file
 	} else {
-		query = &gojq.Query{Term: &gojq.Term{Type: gojq.TermTypeIdentity}}
+		query = &gojq.Query{Term: &gojq.Term{Type: gojq.TermTypeFunc, Func: &gojq.Func{Name: "ipc::get_tree"}}}
 	}
 
 	if query != nil {
