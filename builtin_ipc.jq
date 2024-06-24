@@ -19,7 +19,7 @@ def sync(payload): _i3jq(11; payload; false);
 def get_binding_state(payload): _i3jq(12; payload; false);
 
 # Shortcuts
-def command(p): run_command(p);
+def command(p): run_command([p] | flatten | join(";"));
 def workspaces: get_workspaces;
 def outputs: get_outputs;
 def tree: get_tree;
