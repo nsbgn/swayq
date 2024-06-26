@@ -68,17 +68,21 @@ def scratchpad:
   .nodes[] | select(.name == "__i3") | .nodes[0];
 
 # Descend tree structure until finding focused workspace
-def workspace:
+def focused_workspace:
   until(.type == "workspace"; descend_focus);
 
 # Follow focus until arriving at a tabbed/stacked container or a leaf window
-def pile:
+def focused_pile:
   until(is_pile or is_leaf; descend_focus);
 
 # Find window that would be focused if this container receives focus
-def window:
+def focused_window:
   until(is_leaf; descend_focus);
 
 # All tiled leaf nodes in the given container
 def tiles:
   recurse(.nodes[]) | select(is_tile);
+
+# All leaf nodes in the given container
+def leaves:
+  recurse(.nodes[], .floating_nodes[]);

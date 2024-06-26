@@ -7,7 +7,7 @@ import "i3jq/tree" as tree;
 ipc::subscribe(["window"])
 | if .change == "new" then
     ipc::get_tree
-    | tree::window
+    | tree::focused_window
     | if .fullscreen_mode then
         ipc::run_command("[con_id=\(.id)] fullscreen disable")
       end
