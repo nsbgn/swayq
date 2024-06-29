@@ -13,6 +13,7 @@ import (
 func main() {
 	var fileFlag = flag.String("f", "", "Read query from file")
 	var quietFlag = flag.Bool("q", false, "Do not print values")
+	var rawFlag = flag.Bool("r", true, "Print raw values")
 	var helpFlag = flag.Bool("h", false, "Show help")
 	flag.Parse()
 	var args = flag.Args()
@@ -98,11 +99,15 @@ func main() {
 				log.Fatalln(err)
 			}
 			if !*quietFlag {
-				output, err := gojq.Marshal(val)
-				if err != nil {
-					log.Fatalln(err)
+				if str, ok := val.(string); (*rawFlag) && ok {
+					fmt.Println(str)
+				} else {
+					output, err := gojq.Marshal(val)
+					if err != nil {
+						log.Fatalln(err)
+					}
+					fmt.Println(string(output))
 				}
-				fmt.Println(string(output))
 			}
 		}
 	}
