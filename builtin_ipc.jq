@@ -19,7 +19,7 @@ def sync(payload): _i3jq(11; payload; false);
 def get_binding_state(payload): _i3jq(12; payload; false);
 
 # Shortcuts
-def command(p): run_command([p] | flatten | join(";"));
+def command(p): run_command(p);
 def workspaces: get_workspaces;
 def outputs: get_outputs;
 def tree: get_tree;
@@ -32,3 +32,14 @@ def binding_modes: get_binding_modes;
 def config: get_config;
 def tick(p): send_tick(p);
 def binding_state(p): get_binding_state(p);
+
+def do(commands):
+  [commands] |
+  flatten |
+  if . == [] then
+    empty
+  else
+    join("; ") |
+    { command: .
+    , result: run_command(.) }
+  end;
