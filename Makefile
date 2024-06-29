@@ -21,10 +21,14 @@ clean:
 install: i3jq
 	mkdir -p ${PREFIX}/bin/
 	install -m755 i3jq ${PREFIX}/bin/
+	mkdir -p ${PREFIX}/share/i3jq/layout/
+	install -m644 share/*.jq ${PREFIX}/share/i3jq/
+	install -m644 share/layout/*.jq ${PREFIX}/share/i3jq/layout/
 
 .PHONY: uninstall
 uninstall:
 	rm -rf ${PREFIX}/bin/i3jq
+	rm -rf ${PREFIX}/share/i3jq
 
 .PRECIOUS: builtin.go
 builtin.go: _tools/gen_builtin.go ${BUILTIN_JQ}

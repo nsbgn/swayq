@@ -11,7 +11,7 @@ import (
 
 
 func main() {
-	var fileFlag = flag.String("f", "", "Read query from file")
+	var fileFlag = flag.String("m", "", "Load module from file")
 	var quietFlag = flag.Bool("q", false, "Do not print values")
 	var rawFlag = flag.Bool("r", true, "Print raw values")
 	var helpFlag = flag.Bool("h", false, "Show help")

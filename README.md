@@ -18,8 +18,8 @@ This repository contains the `i3jq` application, which adds internal
 functions corresponding to i3's [IPC spec][ipc] on top of 
 [`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`. It also 
 offers modules for common tasks, such as navigating the layout tree. 
-Finally, in the [`contrib/`](./contrib/) directory, you will find 
-filters to achieve some useful behaviour.
+Finally, in the [`share/`](./share/) directory, you will find filters to 
+achieve some useful behaviour.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 
@@ -45,10 +45,12 @@ You can write a filter to execute a command:
 
     i3jq 'ipc::subscribe(["window"]) | .container.name // empty'
 
-To run something within Sway or i3, add a line like this to your 
-configuration:
+You can load a module with the `-m` flag. Modules are searched for in 
+the current working directory, `~/.config/i3jq`, `~/.jq`, 
+`$ORIGIN/../share/i3jq` and `$ORIGIN/../lib/jq`. To run an `i3jq` script 
+within Sway or i3, add a line like this to your configuration:
 
-    exec i3jq -f contrib/auto_exit_fullscreen.jq
+    exec i3jq -m layout/master-stack
 
 Please view the `builtin_*.jq` filters for detailed information on the 
 available modules and the functions defined within.
