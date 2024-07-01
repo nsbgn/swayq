@@ -18,8 +18,8 @@ This repository contains the `i3jq` application, which adds internal
 functions corresponding to i3's [IPC spec][ipc] on top of 
 [`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`. It also 
 offers modules for common tasks, such as navigating the layout tree. 
-Finally, in the [`share/`](./share/) directory, you will find filters to 
-achieve some useful behaviour.
+Finally, in the [`contrib/`](./contrib/) directory, you will find 
+filters to achieve some useful behaviour.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 

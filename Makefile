@@ -22,8 +22,8 @@ install: i3jq
 	mkdir -p ${PREFIX}/bin/
 	install -m755 i3jq ${PREFIX}/bin/
 	mkdir -p ${PREFIX}/share/i3jq/layout/
-	install -m644 share/*.jq ${PREFIX}/share/i3jq/
-	install -m644 share/layout/*.jq ${PREFIX}/share/i3jq/layout/
+	install -m644 contrib/*.jq ${PREFIX}/share/i3jq/
+	install -m644 contrib/layout/*.jq ${PREFIX}/share/i3jq/layout/
 
 .PHONY: uninstall
 uninstall:
