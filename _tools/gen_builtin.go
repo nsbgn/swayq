@@ -30,12 +30,25 @@ func main() {
 package main
 import . "github.com/itchyny/gojq"
 import "github.com/itchyny/gojq"
+
+func LoadBuiltin(name *string) *gojq.Query {
+	if name == nil {
+		var names string = "i3jq/mods"
+		name = &names
+	}
+	switch(*name){
 `)
 
 	cwd, err := os.Getwd()
 	builtin := filepath.Join(cwd, "builtin")
 	err = filepath.Walk(builtin, func(path string, info os.FileInfo, err error) error {
 		if info != nil && !info.IsDir() && strings.HasSuffix(path, ".jq") {
+			rel, err := filepath.Rel(builtin, path)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			rel = rel[:len(rel)-3]
+
 			cnt, err := os.ReadFile(path)
 			if err != nil {
 				log.Fatalln(err)
@@ -51,22 +64,17 @@ import "github.com/itchyny/gojq"
 			if err != nil {
 				log.Fatalln(err)
 			}
+			out.WriteString(fmt.Sprintf("\tcase \"i3jq/%v\":\n\t\treturn ", rel))
 			out.WriteString(*str)
+			out.WriteString("\n")
 		}
 		return nil
 	})
-}
 
-func getName(q *gojq.Query) *string {
-	if q.Meta != nil {
-		for _, kv := range q.Meta.KeyVals {
-			if kv.Key == "name" {
-				return &kv.Val.Str
-			}
-		}
+	out.WriteString(`	default:
+		return nil
 	}
-	str := "unnamed"
-	return &str
+}`)
 }
 
 func formatQuery(q *gojq.Query) (*string, error) {
@@ -78,15 +86,10 @@ func formatQuery(q *gojq.Query) (*string, error) {
 
 	// Turn AST into a string
 	var sb strings.Builder
-	var name = getName(q)
-	sb.WriteString("\nvar ")
-	sb.WriteString(*name)
-	sb.WriteString("Query = ")
 	err = printer.Fprint(&sb, token.NewFileSet(), ast)
 	if err != nil {
 		return nil, err
 	}
-	sb.WriteString("\n\n")
 	str := sb.String()
 
 	// Convert integers to proper enums
