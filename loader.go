@@ -23,6 +23,8 @@ func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	return modules, nil
 }
 
+//go:generate go run _tools/gen_builtin.go
+
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 	switch(name){
 	case "i3jq/ipc":

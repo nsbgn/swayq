@@ -4,7 +4,7 @@ BIN:=i3jq
 REVISION=$(shell git rev-parse --short HEAD)
 LDFLAGS="-s -w -X 'main.Version=$(REVISION)'"
 
-BUILTIN_JQ = $(wildcard builtin*.jq)
+BUILTIN_JQ = $(wildcard builtin/*.jq)
 
 .PHONY: all
 all: build
@@ -32,7 +32,7 @@ uninstall:
 
 .PRECIOUS: builtin.go
 builtin.go: _tools/gen_builtin.go ${BUILTIN_JQ}
-	$(GO) run $^
+	$(GO) generate
 
 %: %.go $(wildcard *.go) builtin.go
 	$(GO) build -ldflags=$(LDFLAGS) -o $@ $^
