@@ -10,7 +10,7 @@ def swap($anchor):
   "[con_id=\(.id)] swap container with con_id \($anchor.id)";
 
 def focus:
-  tree::window | "[con_id=\(.id)] focus";
+  tree::focused_window | "[con_id=\(.id)] focus";
 
 def mark(marks):
   ["[con_id=\(.id)] mark --add \(marks)"] | join("; ");
