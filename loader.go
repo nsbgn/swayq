@@ -16,7 +16,8 @@ type i3jqModuleLoader struct {
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	modules := make([]*gojq.Query, 1)
-	modules[0] = LoadBuiltin(nil)
+	var mods string = "i3jq/mods"
+	modules[0] = LoadBuiltin(&mods)
 	if l.base != nil {
 		modules = append(modules, l.base)
 	}

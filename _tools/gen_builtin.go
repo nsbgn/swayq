@@ -32,10 +32,6 @@ import . "github.com/itchyny/gojq"
 import "github.com/itchyny/gojq"
 
 func LoadBuiltin(name *string) *gojq.Query {
-	if name == nil {
-		var names string = "i3jq/mods"
-		name = &names
-	}
 	switch(*name){
 `)
 
