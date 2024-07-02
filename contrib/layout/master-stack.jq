@@ -50,8 +50,8 @@ def apply_layout:
       # also just one master window, but that might not be true if we just 
       # closed the previous master window. In that case, we select the second 
       # most recently focused window in this stack and promote it to master
-      (tree::descend_focus(1) | "[con_id=\(.id)] move right"),
-      (tree::descend_focus(0) | mark(insert), "unmark \(swap)")
+      (tree::focus(1) | "[con_id=\(.id)] move right"),
+      (tree::focus | mark(insert), "unmark \(swap)")
     end
   elif $n == 0 then
     "unmark \(swap)", "unmark \(insert)"
