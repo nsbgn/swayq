@@ -28,18 +28,18 @@ def is_tile:
 
 # Descend tree structure one level, into the nth focused node from the given 
 # node generator (typically .nodes[] or .floating_nodes[])
-def focus_step_n(generator; $n):
+def focus_step(generator; $n):
   nth($n; .focus[] as $id | generator | select(.id == $id) // empty);
 
 # Descend tree structure one level, into the nth focused node
-def focus_step_n($n):
+def focus_step($n):
   # We can assume that the nth item in the focus list exists among the nodes
   .focus[$n] as $id
   | .floating_nodes[], .nodes[]
   | select(.id == $id);
 
 def focus_step:
-  focus_step_n(0);
+  focus_step(0);
 
 # Descend the focused containers until arriving at a container that satisfies
 # the given condition. For example, to find the focused workspace, do
