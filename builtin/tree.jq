@@ -28,18 +28,28 @@ def is_tile:
 
 # Descend tree structure one level, into the nth focused node from the given 
 # node generator (typically .nodes[] or .floating_nodes[])
-def focus(generator; $n):
+def focus_step_n(generator; $n):
   nth($n; .focus[] as $id | generator | select(.id == $id) // empty);
 
 # Descend tree structure one level, into the nth focused node
-def focus($n):
+def focus_step_n($n):
   # We can assume that the nth item in the focus list exists among the nodes
   .focus[$n] as $id
   | .floating_nodes[], .nodes[]
   | select(.id == $id);
 
+def focus_step:
+  focus_step_n(0);
+
+# Descend the focused containers until arriving at a container that satisfies
+# the given condition. For example, to find the focused workspace, do
+# `focus(.type == "workspace")`.
+def focus(cond):
+  until(cond; focus_step);
+
+# Descend the focused containers until arriving at a leaf
 def focus:
-  focus(0);
+  focus(.nodes == [] and .floating_nodes == []);
 
 # Descend one level into a neighbour of the nth focused tiling node
 def focus_neighbour($offset; $wrap; $n):
@@ -60,24 +70,9 @@ def find(condition):
 def find_all(condition):
   recurse(.nodes[], .floating_nodes[]) | select(condition);
 
-
-# Finding specific containers
-
 # Find scratchpad workspace from root node
 def scratchpad:
   .nodes[] | select(.name == "__i3") | .nodes[0];
-
-# Descend tree structure until finding focused workspace
-def focused_workspace:
-  until(.type == "workspace"; focus);
-
-# Follow focus until arriving at a tabbed/stacked container or a leaf window
-def focused_pile:
-  until(is_pile or is_leaf; focus);
-
-# Find window that would be focused if this container receives focus
-def focused_window:
-  until(is_leaf; focus);
 
 # All tiled leaf nodes in the given container
 def tiles:

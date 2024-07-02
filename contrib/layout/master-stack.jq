@@ -34,7 +34,7 @@ def apply_layout:
       mark(insert),
       "[con_id=\(.id)] splitv"
     else
-      tree::focused_window |
+      tree::focus |
       mark(insert)
     end, "unmark \(swap)"
   elif $n == 1 then
@@ -50,8 +50,8 @@ def apply_layout:
       # also just one master window, but that might not be true if we just 
       # closed the previous master window. In that case, we select the second 
       # most recently focused window in this stack and promote it to master
-      (tree::focus(1) | "[con_id=\(.id)] move right"),
-      (tree::focus | mark(insert), "unmark \(swap)")
+      (tree::focus_step(1) | "[con_id=\(.id)] move right"),
+      (tree::focus_step(0) | mark(insert), "unmark \(swap)")
     end
   elif $n == 0 then
     "unmark \(swap)", "unmark \(insert)"
@@ -64,15 +64,15 @@ def handler:
   if event("workspace"; "focus") or event("window"; "new", "close") then
     ipc::do(
       ipc::get_tree |
-      tree::focused_workspace |
+      tree::focus(.type == "workspace") |
       apply_layout
     )
   elif event("window"; "focus") then
     ipc::do(
       ipc::get_tree |
-      tree::focused_workspace |
+      tree::focus(.type == "workspace") |
       (.nodes[0] // empty) |
-      tree::focused_window |
+      tree::focus |
       mark(insert)
     )
   else
