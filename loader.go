@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run _tools/gen_builtin.go
+
 import (
 	"os"
 	"path/filepath"
@@ -16,15 +18,13 @@ type i3jqModuleLoader struct {
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	modules := make([]*gojq.Query, 1)
-	var mods string = "i3jq/mods"
+	var mods string = "i3jq/base"
 	modules[0] = LoadBuiltin(&mods)
 	if l.base != nil {
 		modules = append(modules, l.base)
 	}
 	return modules, nil
 }
-
-//go:generate go run _tools/gen_builtin.go
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 	builtin := LoadBuiltin(&name)
