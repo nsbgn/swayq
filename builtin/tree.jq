@@ -2,29 +2,12 @@ module {name: "tree"};
 
 import "i3jq/util" as util;
 
-
-# Predicates on containers
-
-def is_marked($mark):
-  .marks as $marks | $mark | util::among($marks[]);
-
-def is_horizontal:
-  .layout | util::among("splith", "tabbed");
-
-def is_vertical:
-  .layout | util::among("splitv", "stacked");
-
-def is_pile:
-  .layout | util::among("tabbed", "stacked");
-
-def is_leaf:
-  .nodes == [] and .layout == "none";
-
-def is_tile:
-  .type == "con" and .nodes == [];
-
-
-# Finding general containers
+# `some` is a helper for writing succinct predicates. It returns true if and
+# only if any of the values in the argument generator were true. Consider
+# `some(.layout == ("stacked", "tabbed"))` or `some(.marks[] == "m")`.
+# This is equivalent to `[generator] | any`, but more convenient.
+def some(generator):
+  first(generator | select(.) | true) // false;
 
 # Descend tree structure one level, into the nth focused node from the given 
 # node generator (typically .nodes[] or .floating_nodes[])
@@ -33,7 +16,7 @@ def focus_step(generator; $n):
 
 # Descend tree structure one level, into the nth focused node
 def focus_step($n):
-  # We can assume that the nth item in the focus list exists among the nodes
+  # We assume that the nth item in the focus list exists among the nodes
   .focus[$n] as $id
   | .floating_nodes[], .nodes[]
   | select(.id == $id);
@@ -76,7 +59,7 @@ def scratchpad:
 
 # All tiled leaf nodes in the given container
 def tiles:
-  recurse(.nodes[]) | select(is_tile);
+  recurse(.nodes[]);
 
 # All leaf nodes in the given container
 def leaves:
