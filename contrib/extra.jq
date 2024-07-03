@@ -17,6 +17,13 @@ def indexr(condition):
 def among(f):
   first(. == f // empty) // false;
 
+# `some` is a helper for writing succinct predicates. It returns true if and
+# only if any of the values in the argument generator were true. Consider
+# `some(.layout == ("stacked", "tabbed"))` or `some(.marks[] == "m")`.
+# This is equivalent to `[generator] | any`, but more convenient.
+def some(generator):
+  first(generator | select(.) | true) // false;
+
 # Clamp a number to minimum and maximum values
 def clamp($min; $max):
   if . >= $min then if . <= $max then . else $max end else $min end;
