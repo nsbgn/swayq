@@ -11,24 +11,24 @@ def some(generator):
 
 # Descend tree structure one level, into the nth focused node from the given 
 # node generator (typically .nodes[] or .floating_nodes[])
-def focus_step(generator; $n):
+def focus_child(generator; $n):
   nth($n; .focus[] as $id | generator | select(.id == $id) // empty);
 
 # Descend tree structure one level, into the nth focused node
-def focus_step($n):
+def focus_child($n):
   # We assume that the nth item in the focus list exists among the nodes
   .focus[$n] as $id
   | .floating_nodes[], .nodes[]
   | select(.id == $id);
 
-def focus_step:
-  focus_step(0);
+def focus_child:
+  focus_child(0);
 
 # Descend the focused containers until arriving at a container that satisfies
 # the given condition. For example, to find the focused workspace, do
 # `focus(.type == "workspace")`.
 def focus(cond):
-  until(cond; focus_step);
+  until(cond; focus_child);
 
 # Descend the focused containers until arriving at a leaf
 def focus:
