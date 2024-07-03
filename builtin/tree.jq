@@ -1,18 +1,11 @@
 module {name: "tree"};
 
-import "i3jq/util" as util;
-
 # `some` is a helper for writing succinct predicates. It returns true if and
 # only if any of the values in the argument generator were true. Consider
 # `some(.layout == ("stacked", "tabbed"))` or `some(.marks[] == "m")`.
 # This is equivalent to `[generator] | any`, but more convenient.
 def some(generator):
   first(generator | select(.) | true) // false;
-
-# Descend tree structure one level, into the nth focused node from the given 
-# node generator (typically .nodes[] or .floating_nodes[])
-def focus_child(generator; $n):
-  nth($n; .focus[] as $id | generator | select(.id == $id) // empty);
 
 # Descend tree structure one level, into the nth focused node
 def focus_child($n):
@@ -33,17 +26,6 @@ def focus(cond):
 # Descend the focused containers until arriving at a leaf
 def focus:
   focus(.nodes == [] and .floating_nodes == []);
-
-# Descend one level into a neighbour of the nth focused tiling node
-def focus_neighbour($offset; $wrap; $n):
-  nth($n; .focus[] as $id | .nodes | util::indexl(.id == $id) // empty) as $i
-  | ($i + $offset) as $j
-  | .nodes
-  | .[if $wrap then util::wrap($j) else util::clip($j) end];
-
-# Descend one level into a neighbour of the most focused tiling node
-def focus_neighbour($offset; $wrap):
-  focus_neighbour($offset; $wrap; 0);
 
 # Find a unique node
 def find(condition):
