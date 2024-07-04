@@ -1,7 +1,10 @@
 // +build ignore
 // This tool is not part of the build --- it is an intermediate step that
 // produces `builtin.go` by compiling any jq file in the `builtin/` directory
-// into an instant Go structure. It runs when you do `go generate`.
+// into an instant Go structure. It runs when you do `go generate`. To keep
+// the jq files and `builtin.go` in lockstep, do:
+//    ln -s hooks/pre-commit .git/hooks/pre-commit
+// or git config core.hooksPath hooks
 //
 // Originally adapted from: <https://github.com/itchyny/gojq/blob/0607aa5af33a4f980e3e769a1820db80e3cc7b23/_tools/gen_builtin.go>
 
