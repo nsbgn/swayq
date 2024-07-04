@@ -16,7 +16,7 @@
 
 cd "$(git rev-parse --show-toplevel)"
 
-GENERATOR="_tools/gen_builtin.go"
+GENERATOR="builtin.generator.go"
 BUILTIN_DIR="builtin"
 BUILTIN_GO="builtin.go"
 

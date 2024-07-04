@@ -31,8 +31,8 @@ uninstall:
 	rm -rf ${PREFIX}/share/i3jq
 
 .PRECIOUS: builtin.go
-builtin.go: _tools/gen_builtin.go ${BUILTIN_JQ}
+builtin.go: builtin.generator.go ${BUILTIN_JQ}
 	$(GO) generate
 
-%: %.go $(wildcard *.go) builtin.go
+%: %.go $(filter-out builtin.generator.go,$(wildcard *.go)) builtin.go
 	$(GO) build -ldflags=$(LDFLAGS) -o $@ $^

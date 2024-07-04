@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run _tools/gen_builtin.go
+//go:generate go run builtin.generator.go
 
 import (
 	"os"
