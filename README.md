@@ -17,9 +17,9 @@ terser than either!
 This repository contains the `i3jq` application, which adds internal 
 functions corresponding to i3's [IPC spec][ipc] on top of 
 [`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`. It also 
-offers modules for common tasks, such as navigating the layout tree. 
-Finally, in the [`contrib/`](./contrib/) directory, you will find 
-filters to achieve some useful behaviour.
+offers a `tree` module for navigating the layout tree. Finally, in the 
+[`contrib/`](./contrib/) directory, you will find filters to achieve 
+some useful behaviour.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 
@@ -32,7 +32,7 @@ commands quite often, so a low footprint is desirable.
 
 Make sure you have at least [Go][go] 1.21 installed. Then run:
 
-    make && sudo make install
+    go install codeberg.org/nsbg/i3jq@latest
 
 
 ## Usage
@@ -52,8 +52,8 @@ within Sway or i3, add a line like this to your configuration:
 
     exec i3jq -m layout/master-stack
 
-Please view the `builtin_*.jq` filters for detailed information on the 
-available modules and the functions defined within.
+Please view the filters in [`builtin/`](./builtin/) for detailed 
+information on the available modules and the functions defined within.
 
 
 [i3]: https://i3wm.org/
