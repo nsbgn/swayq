@@ -10,36 +10,51 @@
 # source code repository ..."
 # ~ Rob Pike, 2014-12-22, <https://go.dev/blog/generate>, accessed 2024-07-03.
 #
-# To somewhat mitigate the mental burden of keeping files in sync, this
-# pre-commit hook checks if any source builtin was changed, and if so, runs `go
-# generate` and adds the resulting `builtin.go` to the commit.
+# To mitigate the mental burden of keeping files in sync, this pre-commit hook
+# checks if any source builtin was changed and the differences staged, and if
+# so, runs `go generate` to check if the staged `builtin.go` corresponds to the
+# one generated from the current working tree. If not, the commit will fail: to
+# keep the process transparent (and make sure that I didn't make a mistake),
+# the generated file will then need to be added manually.
 
-cd "$(git rev-parse --show-toplevel)"
+# TODO: Since go generate is not ran against the *staged* changes but just
+# against the current working tree, this doesn't do exactly what I want yet.
 
-GENERATOR="builtin.generator.go"
-BUILTIN_DIR="builtin"
-BUILTIN_GO="builtin.go"
-
-if [ ! -e "${GENERATOR}" ]; then
-    echo 'Error: Could not find builtin generator' 1>&2
-    exit 1
-fi
-if [ ! -e "${BUILTIN_DIR}"/base.jq ]; then
-    echo 'Error: Could not find builtins' 1>&2
-    exit 1
-fi
+builtin_dir="builtin"
+builtin_gen="builtin.generator.go"
+builtin_go="builtin.go"
 
 builtins_changed() {
+    if [ ! -d "${builtin_dir}" ]; then
+        echo "Could not find ${builtin_dir}/. Aborting commit." 1>&2
+        exit 1
+    fi
     git diff --cached --name-only --diff-filter=ACM | \
-        grep "^\(\.\./\)*${BUILTIN_DIR}/.*\.jq$\|^${GENERATOR}$"
+        grep "^\(\.\./\)*${builtin_dir}/.*\.jq$\|^${builtin_gen}$"
     return $?
 }
 
-if builtins_changed; then
-    echo 'Detected staged changes in builtins. Running `go generate`...' 1>&2
-    if ! go generate; then
+staged_changes_match() {
+    if [ ! -e "${builtin_gen}" ]; then
+        echo "Could not find ${builtin_gen}. Aborting commit." 1>&2
         exit 1
     fi
-    echo "Adding ${BUILTIN_GO} to commit." 1>&2
-    git add -f "${BUILTIN_GO}"
+    tmpfile="$(mktemp)"
+    trap "rm -f ${tmpfile}" EXIT
+    if ! go run -modfile=go.dev.mod ${builtin_gen} > ${tmpfile}; then
+        echo "Could not run ${builtin_gen}. Aborting commit." 1>&2
+        exit 1
+    fi
+    # TODO run git diff against staged changes
+    git diff --exit-code "${builtin_go}" "${tmpfile}" > /dev/null
+    return $?
+}
+
+cd "$(git rev-parse --show-toplevel)"
+if builtins_changed; then
+    echo "Builtins have staged changes. Checking that ${builtin_go} is in sync..." 1>&2
+    if ! staged_changes_match; then
+        echo 'The staged changes are not in sync. Aborting commit.' 1>&2
+        exit 1
+    fi
 fi
