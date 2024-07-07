@@ -1,25 +1,40 @@
-# Print a readable tiling tree
+# Print a readable tiling tree.
 
 import "i3jq/ipc" as ipc;
 
 def show($prefix):
     def head:
-        "#\(.id) \(.app_id) type:\(.type) layout:\(.layout)";
+        if .type == "root" then
+            "[root:\(.layout)] (#\(.id))"
+        elif .type == "output" then
+            "[\(.layout)] \(.name) (#\(.id))"
+        elif .type == "workspace" then
+            "[workspace:\(.layout)] \(.name) (#\(.id))"
+        elif .layout != "none" then
+            "[con:\(.layout)] (#\(.id))"
+        else
+            "\(.app_id) (#\(.id)) \(if .focused then "*" else "" end)"
+        end;
 
     def tail:
-        [ .nodes[], .floating_nodes[]
-        | show($prefix + "  ┊ ")] |
-        join("\n") |
-        if . != "" then "\n" + . end;
+        [.nodes[], .floating_nodes[]] |
+        if . != [] then [
+            (.[:-1].[] | $prefix + "├─" + show($prefix + "│ ")),
+            (.[-1]     | $prefix + "└─" + show($prefix + "  "))
+        ] end |
+        join("\n");
 
-    $prefix +
-    (if .focused then head | "✱ " + . else head end) +
-    tail;
+    tail as $tail |
+    if $tail == "" then
+        "╴ " + head + $tail
+    else
+        "┮━━ " + head + "\n" + $tail
+    end;
 
 def show:
     show("");
 
-def changing:
+def listen:
     ipc::subscribe(["window", "workspace"]) |
     ipc::get_tree |
     60 * "─" + "\n" + show
