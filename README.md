@@ -3,16 +3,16 @@
 *This application is still rough around the edges and interfaces may 
 change without warning.*
 
-To programmatically control the window manager [i3] or its sibling 
-[Sway][sway], you would usually use a library like [go-i3] or [i3ipc]. 
-The library would send and receive some JSON on your behalf, translate 
-it to a native structure, and allow you to do your thing.
+To programmatically control the window manager [i3] or its younger 
+sibling [Sway][sway], you might use a library like [go-i3] or [i3ipc]. 
+The library sends and receives some JSON on your behalf, translates it 
+to a native structure, and allows you to do your thing.
 
-But why not use a language already tailor-made for JSON transformations: 
-[jq]? This allows you to closely follow i3's original [commands][cmd] 
-and [IPC spec][ipc]. You get the convenience of a script while staying 
-closer to the speed of a compiled program — and the result is often much 
-terser than either!
+But why not use a language that is already tailor-made for JSON 
+transformations: [jq]? This allows you to closely follow i3's original 
+[commands][cmd] and [IPC spec][ipc]. You get the convenience of a script 
+while staying closer to the speed of a compiled program — and the result 
+is often much terser than either!
 
 This repository contains the `i3jq` application, which adds internal 
 functions corresponding to i3's [IPC spec][ipc] on top of 
@@ -23,9 +23,10 @@ some useful behaviour.
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3jq` 
-binary offers some advantages, like readable code and querying for 
-information only when necessary. Moreover, you will presumably run these 
-commands quite often, so a low footprint is desirable.
+binary offers some advantages, like the ability communicate with i3 at 
+any point during processing, which makes for more efficient and readable 
+scripts. Moreover, you will presumably run these commands quite often, 
+so a low footprint is desirable.
 
 
 ## Installation
@@ -46,11 +47,11 @@ You can write a filter to execute a command:
     i3jq 'ipc::subscribe(["window"]) | .container.name // empty'
 
 You can load a module with the `-m` flag. Modules are searched for in 
-the current working directory, `~/.config/i3jq`, `~/.jq`, 
-`$ORIGIN/../share/i3jq` and `$ORIGIN/../lib/jq`. To run an `i3jq` script 
-within Sway or i3, add a line like this to your configuration:
+the current working directory, `~/.config/i3jq`, `~/.jq` and 
+`$ORIGIN/../lib/jq`. To run an `i3jq` script within Sway or i3, add a 
+line like this to your configuration:
 
-    exec i3jq -m layout/master-stack
+    exec i3jq -m contrib/layout/master-stack
 
 Please view the filters in [`builtin/`](./builtin/) for detailed 
 information on the available modules and the functions defined within.
