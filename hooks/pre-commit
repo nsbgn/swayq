@@ -11,14 +11,11 @@
 # ~ Rob Pike, 2014-12-22, <https://go.dev/blog/generate>, accessed 2024-07-03.
 #
 # To mitigate the mental burden of keeping files in sync, this pre-commit hook
-# checks if any source builtin was changed and the differences staged, and if
-# so, runs `go generate` to check if the staged `builtin.go` corresponds to the
-# one generated from the current working tree. If not, the commit will fail: to
-# keep the process transparent (and make sure that I didn't make a mistake),
-# the generated file will then need to be added manually.
-
-# TODO: Since go generate is not ran against the *staged* changes but just
-# against the current working tree, this doesn't do exactly what I want yet.
+# checks if any source builtin has staged changes, and if so, runs the
+# generator to check if the staged `builtin.go` is in sync with those changes.
+# If not, the commit will fail and the generated file will need to be added
+# manually. This keeps the process transparent (and makes sure that I didn't
+# make a mistake).
 
 builtin_dir="builtin"
 builtin_gen="builtin.generator.go"
@@ -39,14 +36,20 @@ staged_changes_match() {
         echo "Could not find ${builtin_gen}. Aborting commit." 1>&2
         exit 1
     fi
-    tmpfile="$(mktemp)"
-    trap "rm -f ${tmpfile}" EXIT
-    if ! go run -modfile=go.dev.mod ${builtin_gen} > ${tmpfile}; then
+
+    tmpdir="$(mktemp -d)"
+    trap "rm -rf ${tmpdir}" EXIT
+
+    copy_staged "${builtin_dir}" "${tmpdir}"
+    copy_staged "${builtin_go}" "${tmpdir}/actual.go"
+
+    go run -modfile=go.dev.mod "${builtin_gen}" -i "${tmpdir}" > "${tmpdir}/expected.go"
+    if [ $? -ne 0 ]; then
         echo "Could not run ${builtin_gen}. Aborting commit." 1>&2
         exit 1
     fi
-    # TODO run git diff against staged changes
-    git diff --exit-code "${builtin_go}" "${tmpfile}" > /dev/null
+
+    diff -q "${tmpdir}/expected.go" "${tmpdir}/actual.go"
     return $?
 }
 
@@ -62,6 +65,8 @@ copy_staged() {
     elif [ -f "${src}" ]; then
         if git cat-file -e :"${src}" 2> /dev/null; then
             git cat-file -p :"${src}" > "${goal}"
+        else
+            echo "Skipping untracked file ${src}" 1>&2
         fi
     else
         echo "${src} does not exist. Aborting commit." 1>&2
@@ -71,9 +76,11 @@ copy_staged() {
 
 cd "$(git rev-parse --show-toplevel)"
 if builtins_changed; then
-    echo "Builtins have staged changes. Checking that ${builtin_go} is in sync..." 1>&2
-    if ! staged_changes_match; then
-        echo 'The staged changes are not in sync. Aborting commit.' 1>&2
+    echo "Checking that staged changes for builtins conform to those for ${builtin_go}." 1>&2
+    if staged_changes_match; then
+        echo "Success!" 1>&2
+    else
+        echo "Failure. Aborting commit." 1>&2
         exit 1
     fi
 fi
