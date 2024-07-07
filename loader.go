@@ -18,8 +18,7 @@ type i3jqModuleLoader struct {
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	modules := make([]*gojq.Query, 1)
-	var mods string = "i3jq/base"
-	modules[0] = LoadBuiltin(&mods)
+	modules[0] = LoadBuiltin("base")
 	if l.base != nil {
 		modules = append(modules, l.base)
 	}
@@ -27,9 +26,11 @@ func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 }
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
-	builtin := LoadBuiltin(&name)
-	if builtin != nil {
-		return builtin, nil
+	if strings.HasPrefix(name, "i3jq/") {
+		builtin := LoadBuiltin(name[5:])
+		if builtin != nil {
+			return builtin, nil
+		}
 	}
 
 	path, err := findModulePath(name)

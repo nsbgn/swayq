@@ -48,8 +48,8 @@ package main
 import . "github.com/itchyny/gojq"
 import "github.com/itchyny/gojq"
 
-func LoadBuiltin(name *string) *gojq.Query {
-	switch(*name){
+func LoadBuiltin(name string) *gojq.Query {
+	switch(name){
 `)
 
 	err = filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
@@ -75,7 +75,7 @@ func LoadBuiltin(name *string) *gojq.Query {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			out.WriteString(fmt.Sprintf("\tcase \"i3jq/%v\":\n\t\treturn ", rel))
+			out.WriteString(fmt.Sprintf("\tcase \"%v\":\n\t\treturn ", rel))
 			out.WriteString(*str)
 			out.WriteString("\n")
 		}
