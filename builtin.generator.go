@@ -1,8 +1,8 @@
 // +build ignore
 // This tool is not part of the build --- it is an intermediate step that
 // produces `builtin.go` by compiling any jq file in the `builtin/` directory
-// into an instant Go structure. It runs when you do `go generate`. To keep
-// the jq files and `builtin.go` in lockstep, do:
+// into an instant Go structure. It runs when you do `go generate`. To remind
+// you to keep the jq files and `builtin.go` in lockstep, do:
 //    ln -s hooks/pre-commit .git/hooks/pre-commit
 // or git config core.hooksPath hooks
 //
@@ -18,6 +18,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"flag"
 	"path/filepath"
 
 	"github.com/itchyny/astgen-go"
@@ -25,13 +26,17 @@ import (
 )
 
 func main() {
+	var inputDir, outputFile string
+	flag.StringVar(&inputDir, "i", "builtin", "input directory")
+	flag.StringVar(&outputFile, "o", "-", "output file")
+	flag.Parse()
 	var out *os.File
 	var err error
-	if len(os.Args) > 1 {
-		out, err = os.Create(fmt.Sprintf("%v.go", os.Args[1]))
-		defer out.Close()
-	} else {
+	if outputFile == "-" {
 		out = os.Stdout
+	} else {
+		out, err = os.Create(outputFile)
+		defer out.Close()
 	}
 	if err != nil {
 		log.Fatalln(err)
@@ -47,14 +52,9 @@ func LoadBuiltin(name *string) *gojq.Query {
 	switch(*name){
 `)
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	builtin := filepath.Join(cwd, "builtin")
-	err = filepath.Walk(builtin, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
 		if info != nil && !info.IsDir() && strings.HasSuffix(path, ".jq") {
-			rel, err := filepath.Rel(builtin, path)
+			rel, err := filepath.Rel(inputDir, path)
 			if err != nil {
 				log.Fatalln(err)
 			}
