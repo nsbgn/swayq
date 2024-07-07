@@ -10,36 +10,77 @@
 # source code repository ..."
 # ~ Rob Pike, 2014-12-22, <https://go.dev/blog/generate>, accessed 2024-07-03.
 #
-# To somewhat mitigate the mental burden of keeping files in sync, this
-# pre-commit hook checks if any source builtin was changed, and if so, runs `go
-# generate` and adds the resulting `builtin.go` to the commit.
+# To mitigate the mental burden of keeping files in sync, this pre-commit hook
+# checks if any source builtin has staged changes, and if so, runs the
+# generator to check if the staged `builtin.go` is in sync with those changes.
+# If not, the commit will fail and the generated file will need to be added
+# manually. This keeps the process transparent (and makes sure that I didn't
+# make a mistake).
 
-cd "$(git rev-parse --show-toplevel)"
-
-GENERATOR="builtin.generator.go"
-BUILTIN_DIR="builtin"
-BUILTIN_GO="builtin.go"
-
-if [ ! -e "${GENERATOR}" ]; then
-    echo 'Error: Could not find builtin generator' 1>&2
-    exit 1
-fi
-if [ ! -e "${BUILTIN_DIR}"/base.jq ]; then
-    echo 'Error: Could not find builtins' 1>&2
-    exit 1
-fi
+builtin_dir="builtin"
+builtin_gen="builtin.generator.go"
+builtin_go="builtin.go"
 
 builtins_changed() {
+    if [ ! -d "${builtin_dir}" ]; then
+        echo "Could not find ${builtin_dir}/. Aborting commit." 1>&2
+        exit 1
+    fi
     git diff --cached --name-only --diff-filter=ACM | \
-        grep "^\(\.\./\)*${BUILTIN_DIR}/.*\.jq$\|^${GENERATOR}$"
+        grep "^\(\.\./\)*${builtin_dir}/.*\.jq$\|^${builtin_gen}$"
     return $?
 }
 
-if builtins_changed; then
-    echo 'Detected staged changes in builtins. Running `go generate`...' 1>&2
-    if ! go generate; then
+staged_changes_match() {
+    if [ ! -e "${builtin_gen}" ]; then
+        echo "Could not find ${builtin_gen}. Aborting commit." 1>&2
         exit 1
     fi
-    echo "Adding ${BUILTIN_GO} to commit." 1>&2
-    git add -f "${BUILTIN_GO}"
+
+    tmpdir="$(mktemp -d)"
+    trap "rm -rf ${tmpdir}" EXIT
+
+    copy_staged "${builtin_dir}" "${tmpdir}"
+    copy_staged "${builtin_go}" "${tmpdir}/actual.go"
+
+    go run -modfile=go.dev.mod "${builtin_gen}" -i "${tmpdir}" > "${tmpdir}/expected.go"
+    if [ $? -ne 0 ]; then
+        echo "Could not run ${builtin_gen}. Aborting commit." 1>&2
+        exit 1
+    fi
+
+    diff -q "${tmpdir}/expected.go" "${tmpdir}/actual.go"
+    return $?
+}
+
+# Copy the staged version of a file/directory to somewhere
+copy_staged() {
+    local src="${1}"
+    local goal="${2}"
+    if [ -d "${src}" ]; then
+        mkdir -p "${goal}"
+        for path in "${src}"/*; do
+            copy_staged "${path}" "${goal}/${path##${src}/}"
+        done
+    elif [ -f "${src}" ]; then
+        if git cat-file -e :"${src}" 2> /dev/null; then
+            git cat-file -p :"${src}" > "${goal}"
+        else
+            echo "Skipping untracked file ${src}" 1>&2
+        fi
+    else
+        echo "${src} does not exist. Aborting commit." 1>&2
+        exit 1
+    fi
+}
+
+cd "$(git rev-parse --show-toplevel)"
+if builtins_changed; then
+    echo "Checking that staged changes for builtins conform to those for ${builtin_go}." 1>&2
+    if staged_changes_match; then
+        echo "Success!" 1>&2
+    else
+        echo "Failure. Aborting commit." 1>&2
+        exit 1
+    fi
 fi

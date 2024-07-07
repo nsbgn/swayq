@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run -modfile=go.dev.mod builtin.generator.go builtin
+//go:generate go run -modfile=go.dev.mod builtin.generator.go -i builtin/ -o builtin.go
 
 import (
 	"os"
