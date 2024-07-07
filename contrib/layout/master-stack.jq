@@ -9,14 +9,18 @@ import "i3jq/tree" as tree;
 def insert: "insert";
 def swap: "swap";
 
+def some(generator):
+  first(generator | select(.) | true) // false;
+
 def event(event; change):
   (.event as $e | any(event; $e == .)) and
   (.change as $c | any(change; $c == .));
 
 def mark($mark; $yes):
-  if $yes and (tree::is_marked($mark) | not) then
+  some(.marks[] == $mark) as $marked |
+  if $yes and ($marked | not) then
     "[con_id=\(.id)] mark --add \($mark)"
-  elif ($yes | not) and tree::is_marked($mark) then
+  elif ($yes | not) and $marked then
     "unmark \($mark)"
   else
     empty
@@ -50,8 +54,8 @@ def apply_layout:
       # also just one master window, but that might not be true if we just 
       # closed the previous master window. In that case, we select the second 
       # most recently focused window in this stack and promote it to master
-      (tree::focus_step(1) | "[con_id=\(.id)] move right"),
-      (tree::focus_step(0) | mark(insert), "unmark \(swap)")
+      (tree::focus_child(1) | "[con_id=\(.id)] move right"),
+      (tree::focus_child(0) | mark(insert), "unmark \(swap)")
     end
   elif $n == 0 then
     "unmark \(swap)", "unmark \(insert)"
