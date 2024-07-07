@@ -50,6 +50,25 @@ staged_changes_match() {
     return $?
 }
 
+# Copy the staged version of a file/directory to somewhere
+copy_staged() {
+    local src="${1}"
+    local goal="${2}"
+    if [ -d "${src}" ]; then
+        mkdir -p "${goal}"
+        for path in "${src}"/*; do
+            copy_staged "${path}" "${goal}/${path##${src}/}"
+        done
+    elif [ -f "${src}" ]; then
+        if git cat-file -e :"${src}" 2> /dev/null; then
+            git cat-file -p :"${src}" > "${goal}"
+        fi
+    else
+        echo "${src} does not exist. Aborting commit." 1>&2
+        exit 1
+    fi
+}
+
 cd "$(git rev-parse --show-toplevel)"
 if builtins_changed; then
     echo "Builtins have staged changes. Checking that ${builtin_go} is in sync..." 1>&2
