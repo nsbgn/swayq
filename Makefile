@@ -22,12 +22,6 @@ install: i3jq
 	mkdir -p ${PREFIX}/bin/
 	install -m755 i3jq ${PREFIX}/bin/
 
-.PHONY: install-contrib
-install-contrib:
-	mkdir -p ${PREFIX}/lib/jq/i3/layout/
-	install -m644 contrib/*.jq ${PREFIX}/lib/jq/i3jq/
-	install -m644 contrib/layout/*.jq ${PREFIX}/lib/jq/i3jq/layout/
-
 .PHONY: uninstall
 uninstall:
 	rm -rf ${PREFIX}/bin/i3jq

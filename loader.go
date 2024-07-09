@@ -101,10 +101,6 @@ func findModulePath(name string) (string, error) {
 	exe, err = filepath.EvalSymlinks(exe)
 	if err != nil {
 		log.Fatalln(err)
-	} else if path, found := findModuleAt(name, filepath.Join(filepath.Dir(exe), "..", "share", "i3jq")); found {
-		return path, nil
-	} else if path, found := findModuleAt(name, filepath.Join(filepath.Dir(exe), "share", "i3jq")); found {
-		return path, nil
 	} else if path, found := findModuleAt(name, filepath.Join(filepath.Dir(exe), "..", "lib", "jq")); found {
 		return path, nil
 	}
