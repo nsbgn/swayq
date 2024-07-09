@@ -17,12 +17,13 @@ type i3jqModuleLoader struct {
 }
 
 func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
-	modules := make([]*gojq.Query, 1)
-	modules[0] = LoadBuiltin("base")
-	if l.base != nil {
-		modules = append(modules, l.base)
+	if l.base == nil {
+		return []*gojq.Query{}, nil
+	} else {
+		modules := make([]*gojq.Query, 1)
+		modules[0] = l.base
+		return modules, nil
 	}
-	return modules, nil
 }
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {

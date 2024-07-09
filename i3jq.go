@@ -33,6 +33,8 @@ func main() {
 			log.Fatalln(err)
 		}
 		query_file = q
+	} else {
+		query_file = LoadBuiltin("base")
 	}
 
 	var query_arg *gojq.Query
@@ -46,14 +48,10 @@ func main() {
 
 	var query *gojq.Query
 	if query_arg != nil {
-		if query_file != nil {
-			loader.base = query_file
-		}
+		loader.base = query_file
 		query = query_arg
-	} else if query_file != nil {
-		query = query_file
 	} else {
-		query = &gojq.Query{Term: &gojq.Term{Type: gojq.TermTypeFunc, Func: &gojq.Func{Name: "ipc::get_tree"}}}
+		query = query_file
 	}
 
 	if query != nil {

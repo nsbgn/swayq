@@ -1,4 +1,7 @@
-module {name: "tree"};
+module {
+  name: "tree",
+  description: "Filters for navigating the layout tree."
+};
 
 # Descend tree structure one level, into the nth focused node
 def focus_child($n):
