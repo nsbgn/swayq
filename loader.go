@@ -30,12 +30,19 @@ func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 		builtin := LoadBuiltin(name[5:])
 		if builtin != nil {
 			return builtin, nil
+		} else {
+			return nil, errors.New(fmt.Sprintf("No builtin named %v", name[5:]))
 		}
 	}
 
 	path, err := findModulePath(name)
 	if err != nil {
-		return nil, err
+		builtin := LoadBuiltin(name)
+		if builtin == nil {
+			return nil, err
+		} else {
+			return builtin, nil
+		}
 	}
 
 	data, err := os.ReadFile(path)
