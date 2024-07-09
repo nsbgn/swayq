@@ -26,7 +26,7 @@ func (l *i3jqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 }
 
 func (l *i3jqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
-	if strings.HasPrefix(name, "i3jq/") {
+	if strings.HasPrefix(name, "i3jq@") {
 		builtin := LoadBuiltin(name[5:])
 		if builtin != nil {
 			return builtin, nil

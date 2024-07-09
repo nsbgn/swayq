@@ -1,6 +1,6 @@
 # Print a readable tiling tree.
 
-import "i3jq/ipc" as ipc;
+import "i3jq@ipc" as ipc;
 
 def show($prefix):
     def head:

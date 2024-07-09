@@ -1,10 +1,5 @@
 module {name: "util"};
 
-# Utility filters
-
-def assert($condition):
-  if $condition then . else error("an assertion failed") end;
-
 # Find the index of the first item satisfying the condition in an array
 def indexl(condition):
   . as $x | first(range(length) | select($x[.] | condition)) // null;
