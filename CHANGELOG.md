@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.1.2 (2024-07-12)
+
+-   Add `lineage/0`, `lineage/1` and `lineage/2` builtins.
+-   Add `children/0` builtin.
+
 ### 0.1.1 (2024-07-09)
 
 -   **Breaking:** Importing builtin modules must now be done with the 
