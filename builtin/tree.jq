@@ -3,6 +3,9 @@ module {
   description: "Filters for navigating the layout tree."
 };
 
+def children:
+  .nodes[], .floating_nodes[];
+
 # Descend tree structure one level, into the nth focused node
 def focus_child($n):
   # We assume that the nth item in the focus list exists among the nodes
@@ -21,15 +24,15 @@ def focus(cond):
 
 # Descend the focused containers until arriving at a leaf
 def focus:
-  focus(.nodes == [] and .floating_nodes == []);
+  focus(isempty(children));
 
 # Find a unique node
 def find(condition):
-  first(recurse(.nodes[], .floating_nodes[]) | select(condition)) // null;
+  first(recurse(children) | select(condition)) // null;
 
 # Find all nodes that satisfy a condition
 def find_all(condition):
-  recurse(.nodes[], .floating_nodes[]) | select(condition);
+  recurse(children) | select(condition);
 
 # `lineage` traverses the tree to produce all lists of nodes that are visited
 # on the way to the target nodes. The lists are in reverse chronological order.
@@ -46,7 +49,7 @@ def lineage(target; child):
     (child | lineage(target; child)) + [.]
   end;
 def lineage(target):
-  lineage(target; .nodes[], .floating_nodes[]);
+  lineage(target; children);
 def lineage:
   lineage(isempty(focus_child); focus_child);
 
@@ -60,4 +63,4 @@ def tiles:
 
 # All leaf nodes in the given container
 def leaves:
-  recurse(.nodes[], .floating_nodes[]);
+  recurse(children);
