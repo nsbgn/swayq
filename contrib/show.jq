@@ -18,39 +18,55 @@ def truncate($n):
     end
   end;
 
+def layout:
+  .layout |
+  if . == "splith" then
+    "↔️ "
+  elif . == "splitv" then
+    "↕️ "
+  elif . == "tabbed" then
+    "🗂️"
+  elif . == "stacked" then
+    "📑"
+  else . end;
+
+def container:
+  if .type == "root" then
+    "🌳"
+  elif .type == "output" then
+    "🖥️  \(.name)"
+  elif .type == "workspace" then
+    "📕 \(layout) \(.name)"
+  elif .layout != "none" then
+    layout
+  else
+    "<\(.app_id | truncate(20))> \(.name | truncate(10))"
+  end;
+
+# cf. <https://en.wikipedia.org/wiki/Box_Drawing>
+# │├└┬┃┠─┡━┱┗┮┍┐
 def show($prefix):
 
   def hat:
-    if .focused then "▶" else " " end +
-    (.id | hex | pad(8)) + " ";
-
-  def head:
-    if .type == "root" then
-      "<root>"
-    elif .type == "output" then
-      "<output> \(.name)"
-    elif .type == "workspace" then
-      "<workspace> \(.name) [\(.layout)]"
-    elif .layout != "none" then
-      "<tile> [\(.layout)]"
-    else
-      "<\(.app_id | truncate(20))> \(.name | truncate(10))"
-    end;
+    (.id | hex | pad(8));
 
   def tail:
-    [.nodes[], .floating_nodes[]] |
-    if . != [] then [
-      (.[:-1].[] | hat + $prefix + "├─" + show($prefix + "│ ")),
-      (.[-1]     | hat + $prefix + "└─" + show($prefix + "  "))
-    ] end |
-    join("\n");
+    if (.nodes == [] and .floating_nodes == []) | not then
+      [.nodes[], .floating_nodes[]] |
+      [
+        (.[:-1].[] | hat + " " + $prefix + "├─" + show($prefix + "│ ")),
+        (.[-1]     | hat + " " + $prefix + "└─" + show($prefix + "  "))
+      ] | join("\n")
+    else
+      ""
+    end;
 
   tail as $tail |
   if $tail == "" then
-    "─ " + head + $tail
+    "─ " + container + $tail
   else
-    if $prefix == "" then hat + "┍" else "┮" end + "━━ " +
-    head + "\n" + $tail
+    if $prefix == "" then hat + "┈┬" else "┬" end +
+    container + "\n" + $tail
   end;
 
 def show:
