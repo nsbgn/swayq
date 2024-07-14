@@ -32,13 +32,13 @@ def layout:
 
 def container:
   if .type == "root" then
-    "🌳"
+    ""
   elif .type == "output" then
     "🖥️  \(.name)"
   elif .type == "workspace" then
-    "📕 \(layout) \(.name)"
+    "\(layout) workspace \(.name)"
   elif .layout != "none" then
-    layout
+    "\(layout) tile"
   else
     "<\(.app_id | truncate(20))> \(.name | truncate(10))"
   end;
@@ -48,14 +48,14 @@ def container:
 def show($prefix):
 
   def hat:
-    (.id | hex | pad(8));
+    (.id | hex | pad(8)) + " ";
 
   def tail:
     if (.nodes == [] and .floating_nodes == []) | not then
       [.nodes[], .floating_nodes[]] |
       [
-        (.[:-1].[] | hat + " " + $prefix + "├─" + show($prefix + "│ ")),
-        (.[-1]     | hat + " " + $prefix + "└─" + show($prefix + "  "))
+        (.[:-1].[] | hat + $prefix + "├─" + show($prefix + "│ ")),
+        (.[-1]     | hat + $prefix + "└─" + show($prefix + "  "))
       ] | join("\n")
     else
       ""
@@ -65,7 +65,7 @@ def show($prefix):
   if $tail == "" then
     "─ " + container + $tail
   else
-    if $prefix == "" then hat + "┈┬" else "┬" end +
+    if $prefix == "" then hat + "┊" else "┬" end +
     container + "\n" + $tail
   end;
 
