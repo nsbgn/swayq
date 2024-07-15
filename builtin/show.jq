@@ -1,4 +1,8 @@
-# Print a readable tiling tree. This should become the default view!
+module {
+  name: "show",
+  description: "A module to show a readable tiling tree. This is the default module."
+};
+
 # cf. <https://en.wikipedia.org/wiki/Box_Drawing>
 
 import "i3jq@ipc" as ipc;
