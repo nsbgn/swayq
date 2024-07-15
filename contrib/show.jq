@@ -1,6 +1,8 @@
 # Print a readable tiling tree. This should become the default view!
+# cf. <https://en.wikipedia.org/wiki/Box_Drawing>
 
 import "i3jq@ipc" as ipc;
+import "i3jq@tree" as tree;
 
 def hex:
   (. / 16 | floor | if . > 0 then hex else "" end)
@@ -10,12 +12,9 @@ def pad($n):
   " " * ($n - length) + .;
 
 def truncate($n):
-  if length > ($n | abs) then
-    if $n > 0 then
-      "\(.[0:$n - 1])…"
-    else
-      "…\(.[length + $n + 1:length])"
-    end
+  ($n / 2 | floor) as $m |
+  if length > $n then
+    "\(.[0:$m - 2])(…)\(.[length - $m + 1:length])"
   end;
 
 def layout:
@@ -32,30 +31,42 @@ def layout:
 
 def container:
   if .type == "root" then
-    "┊"
+    " ┇"
   elif .type == "output" then
-    "🖥️  \(.name)"
+    "output \(.name)"
   elif .type == "workspace" then
-    "\(layout) workspace \(.name)"
+    "workspace \(.name) \(layout)"
   elif .layout != "none" then
-    "\(layout) tile"
+    "tile \(layout)"
   else
-    "<\(.app_id | truncate(20))> \(.name | truncate(10))"
+    "[\(.app_id)] \(.name | truncate(30))"
   end;
 
-# cf. <https://en.wikipedia.org/wiki/Box_Drawing>
-# │├└┬┃┠─┡━┱┗┮┍┐
-def show($pile; $next; $cur):
-  (.id | hex | pad(8)) + " " + $pile + $cur + container, (
-    [.nodes[], .floating_nodes[]] |
-    if . != [] then
-      (.[:-1].[] | show($pile + $next; "│ "; "├─")),
-      (.[-1]     | show($pile + $next; "  "; "└─"))
+def show($pre; $next; $cur; $f):
+  (tree::focus_child.id // null) as $focus |
+  (.floating_nodes[-1] // .nodes[-1]).id as $last |
+  (.id | hex | pad(8)) + $pre + $cur + container,
+  ((.nodes[], .floating_nodes[]) |
+    if .id == $last then
+      if $f and .id == $focus then
+        show($pre + $next; "   "; " ┗━╸"; true)
+      else
+        show($pre + $next; "   "; " └─╴"; false)
+      end
     else
-      empty
-    end);
+      if $f then
+        if .id == $focus then
+          show($pre + $next; " │ "; " ┡━╸"; true)
+        else
+          show($pre + $next; " ┃ "; " ┠─╴"; false)
+        end
+      else
+        show($pre + $next; " │ "; " ├─╴"; false)
+      end
+    end
+  );
 
 def show:
-  show(""; ""; "");
+  show(""; ""; ""; true);
 
 ipc::get_tree | show
