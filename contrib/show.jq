@@ -14,7 +14,7 @@ def truncate($n):
     if $n > 0 then
       "\(.[0:$n - 1])…"
     else
-      "…\(.[length + $n:length - 1])"
+      "…\(.[length + $n + 1:length])"
     end
   end;
 
