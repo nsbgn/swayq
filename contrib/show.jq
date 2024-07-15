@@ -32,7 +32,7 @@ def layout:
 
 def container:
   if .type == "root" then
-    ""
+    "┊"
   elif .type == "output" then
     "🖥️  \(.name)"
   elif .type == "workspace" then
@@ -45,31 +45,17 @@ def container:
 
 # cf. <https://en.wikipedia.org/wiki/Box_Drawing>
 # │├└┬┃┠─┡━┱┗┮┍┐
-def show($prefix):
-
-  def hat:
-    (.id | hex | pad(8)) + " ";
-
-  def tail:
-    if (.nodes == [] and .floating_nodes == []) | not then
-      [.nodes[], .floating_nodes[]] |
-      [
-        (.[:-1].[] | hat + $prefix + "├─" + show($prefix + "│ ")),
-        (.[-1]     | hat + $prefix + "└─" + show($prefix + "  "))
-      ] | join("\n")
+def show($pile; $next; $cur):
+  (.id | hex | pad(8)) + " " + $pile + $cur + container, (
+    [.nodes[], .floating_nodes[]] |
+    if . != [] then
+      (.[:-1].[] | show($pile + $next; "│ "; "├─")),
+      (.[-1]     | show($pile + $next; "  "; "└─"))
     else
-      ""
-    end;
-
-  tail as $tail |
-  if $tail == "" then
-    "─ " + container + $tail
-  else
-    if $prefix == "" then hat + "┊" else "┬" end +
-    container + "\n" + $tail
-  end;
+      empty
+    end);
 
 def show:
-  show("");
+  show(""; ""; "");
 
 ipc::get_tree | show
