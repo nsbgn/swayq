@@ -27,6 +27,7 @@ def bold: _ansi(1);
 def italic: _ansi(3);
 def underline: _ansi(4);
 def invert: _ansi(7);
+def clear: _ansi_escape + "[2J";
 
 def layout:
   .layout |
@@ -42,7 +43,7 @@ def layout:
 
 def container:
   if .type == "root" then
-    " ┇"
+    ""
   elif .type == "output" then
     (" O " | invert) + " \(.name | bold)"
   elif .type == "workspace" then
@@ -53,37 +54,37 @@ def container:
     " \(.app_id | italic) \(.name | truncate(30))"
   end;
 
-def show($pre; $next; $cur; $f):
-  (tree::focus_child.id // null) as $focus |
-  (.floating_nodes[-1] // .nodes[-1]).id as $last |
-  (.id | hex | pad(8)) + $pre + $cur + container,
-  ((.nodes[], .floating_nodes[]) |
-    if .id == $last then
-      if $f and .id == $focus then
-        show($pre + $next; "    "; " ┗━━"; true)
-      else
-        show($pre + $next; "    "; " └──"; false)
-      end
-    else
-      if $f then
-        if .id == $focus then
-          show($pre + $next; " │  "; " ┡━━"; true)
+def show:
+  def show_aux($pre; $next; $cur; $on_focus_path):
+    (tree::focus_child.id // null) as $focus |
+    (.floating_nodes[-1] // .nodes[-1]).id as $last |
+    (.id | hex | pad(8)) + $pre + $cur + container,
+    foreach (.nodes[], .floating_nodes[]) as $x (
+      $on_focus_path;
+      . and $on_focus_path and $x.id != $focus;
+      . as $f |
+      $x |
+      if .id != $last then
+        if $on_focus_path and .id == $focus then
+          show_aux($pre + $next; " │  "; " ┡━━"; true)
+        elif $f then
+          show_aux($pre + $next; " ┃  "; " ┠──"; false)
         else
-          show($pre + $next; " ┃  "; " ┠──"; false)
+          show_aux($pre + $next; " │  "; " ├──"; false)
         end
       else
-        show($pre + $next; " │  "; " ├──"; false)
+        if $on_focus_path and .id == $focus then
+          show_aux($pre + $next; "    "; " ┗━━"; true)
+        else
+          show_aux($pre + $next; "    "; " └──"; false)
+        end
       end
-    end
-  );
+    );
 
-def show:
-  show(""; ""; ""; true);
+  show_aux(""; ""; " ┇"; true);
 
 def watch:
   ipc::subscribe(["window", "workspace"]) |
-  ipc::get_tree |
-  (_ansi_escape + "[2J"),
-  show;
+  ipc::get_tree | clear, show;
 
 ipc::get_tree | show
