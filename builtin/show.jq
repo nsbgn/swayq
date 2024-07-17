@@ -83,6 +83,7 @@ def show:
 def watch:
   ipc::subscribe(["window", "workspace"]) |
   ipc::get_tree |
+  (_ansi_escape + "[2J"),
   show;
 
 ipc::get_tree | show
