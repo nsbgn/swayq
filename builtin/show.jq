@@ -73,4 +73,9 @@ def show($pre; $next; $cur; $f):
 def show:
   show(""; ""; ""; true);
 
+def watch:
+  ipc::subscribe(["window", "workspace"]) |
+  ipc::get_tree |
+  show;
+
 ipc::get_tree | show
