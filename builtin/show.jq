@@ -55,28 +55,32 @@ def container:
   end;
 
 def show:
-  def show_aux($pre; $next; $cur; $on_focus_path):
-    (tree::focus_child.id // null) as $focus |
-    (.floating_nodes[-1] // .nodes[-1]).id as $last |
-    (.id | hex | pad(8)) + $pre + $cur + container,
-    foreach (.nodes[], .floating_nodes[]) as $x (
+  def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
+    ($prefix + $prefix_child) as $prefix_child |
+    (tree::focus_child.id // null) as $focus_id |
+    (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
+    (.id | hex | pad(8)) + $prefix + $prefix_parent + container,
+    foreach (.nodes[], .floating_nodes[]) as $node (
+      # Init:
       $on_focus_path;
-      . and $on_focus_path and $x.id != $focus;
-      . as $f |
-      $x |
-      if .id != $last then
-        if $on_focus_path and .id == $focus then
-          show_aux($pre + $next; " │  "; " ┡━━"; true)
-        elif $f then
-          show_aux($pre + $next; " ┃  "; " ┠──"; false)
+      # Update:
+      . and $node.id != $focus_id;
+      # Extract:
+      . as $waiting_for_focus |
+      $node |
+      if .id != $last_id then
+        if $on_focus_path and .id == $focus_id then
+          show_aux($prefix_child; " │  "; " ┡━━"; true)
+        elif $waiting_for_focus then
+          show_aux($prefix_child; " ┃  "; " ┠──"; false)
         else
-          show_aux($pre + $next; " │  "; " ├──"; false)
+          show_aux($prefix_child; " │  "; " ├──"; false)
         end
       else
-        if $on_focus_path and .id == $focus then
-          show_aux($pre + $next; "    "; " ┗━━"; true)
+        if $on_focus_path and .id == $focus_id then
+          show_aux($prefix_child; "    "; " ┗━━"; true)
         else
-          show_aux($pre + $next; "    "; " └──"; false)
+          show_aux($prefix_child; "    "; " └──"; false)
         end
       end
     );
