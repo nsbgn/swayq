@@ -21,6 +21,13 @@ def truncate($n):
     "\(.[0:$m - 2])(…)\(.[length - $m + 1:length])"
   end;
 
+def _ansi($i):
+  "\(_ansi_escape)[\($i)m\(.)\(_ansi_escape)[0m";
+def bold: _ansi(1);
+def italic: _ansi(3);
+def underline: _ansi(4);
+def invert: _ansi(7);
+
 def layout:
   .layout |
   if . == "splith" then
@@ -37,13 +44,13 @@ def container:
   if .type == "root" then
     " ┇"
   elif .type == "output" then
-    "output \(.name)"
+    (" O " | invert) + " \(.name | bold)"
   elif .type == "workspace" then
-    "workspace \(.name) \(layout)"
+    (" W " | invert) + " \(.name | bold) \(layout)"
   elif .layout != "none" then
-    "tile \(layout)"
+    (" T " | invert) + " \(layout)"
   else
-    "[\(.app_id)] \(.name | truncate(30))"
+    " \(.app_id | italic) \(.name | truncate(30))"
   end;
 
 def show($pre; $next; $cur; $f):
@@ -53,19 +60,19 @@ def show($pre; $next; $cur; $f):
   ((.nodes[], .floating_nodes[]) |
     if .id == $last then
       if $f and .id == $focus then
-        show($pre + $next; "   "; " ┗━╸"; true)
+        show($pre + $next; "    "; " ┗━━"; true)
       else
-        show($pre + $next; "   "; " └─╴"; false)
+        show($pre + $next; "    "; " └──"; false)
       end
     else
       if $f then
         if .id == $focus then
-          show($pre + $next; " │ "; " ┡━╸"; true)
+          show($pre + $next; " │  "; " ┡━━"; true)
         else
-          show($pre + $next; " ┃ "; " ┠─╴"; false)
+          show($pre + $next; " ┃  "; " ┠──"; false)
         end
       else
-        show($pre + $next; " │ "; " ├─╴"; false)
+        show($pre + $next; " │  "; " ├──"; false)
       end
     end
   );
