@@ -41,25 +41,21 @@ def layout:
     "📑"
   else . end;
 
-def container:
-  if .type == "root" then
-    ""
-  elif .type == "output" then
-    (" O " | invert) + " \(.name | bold)"
-  elif .type == "workspace" then
-    (" W " | invert) + " \(.name | bold) \(layout)"
-  elif .layout != "none" then
-    (" T " | invert) + " \(layout)"
-  else
-    " \(.app_id | italic) \(.name | truncate(30))"
-  end;
 
-def show:
+def show(head; tail):
+  def node:
+    if .type == "root" then " / "
+    elif .type == "output" then " M "
+    elif .type == "workspace" then " W "
+    elif .layout != "none" then " T "
+    else ""
+    end;
+
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
     ($prefix + $prefix_child) as $prefix_child |
     (tree::focus_child.id // null) as $focus_id |
     (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
-    (.id | hex | pad(8)) + $prefix + $prefix_parent + container,
+    "\(head)\($prefix)\($prefix_parent)\(node | invert) \(tail // "")",
     foreach (.nodes[], .floating_nodes[]) as $node (
       # Init:
       $on_focus_path;
@@ -85,7 +81,25 @@ def show:
       end
     );
 
-  show_aux(""; ""; " ┇"; true);
+  show_aux(""; ""; ""; true);
+def show(tail):
+  def head: .id | hex | pad(8) + " ";
+  show(head; tail);
+
+def show:
+  def tail:
+    if .type == "root" then
+      ""
+    elif .type == "output" then
+      "\(.name | bold)"
+    elif .type == "workspace" then
+      "\(.name | bold) \(layout)"
+    elif .layout != "none" then
+      layout
+    else
+      "\(.app_id | italic) \(.name | truncate(30))"
+    end;
+  show(tail);
 
 def watch:
   ipc::subscribe(["window", "workspace"]) |
