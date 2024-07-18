@@ -27,7 +27,7 @@ def bold: _ansi(1);
 def italic: _ansi(3);
 def underline: _ansi(4);
 def invert: _ansi(7);
-def clear: _ansi_escape + "[2J";
+def clear: _ansi_escape + "[2J" + _ansi_escape + "[H";
 
 def layout:
   .layout |
@@ -83,10 +83,10 @@ def show(head; tail):
 
   show_aux(""; ""; ""; true);
 def show(tail):
-  def head: .id | hex | pad(8) + " ";
-  show(head; tail);
+  show(" "; tail);
 
 def show:
+  def head: .id | hex | pad(8) + " ";
   def tail:
     if .type == "root" then
       ""
@@ -104,5 +104,9 @@ def show:
 def watch:
   ipc::subscribe(["window", "workspace"]) |
   ipc::get_tree | clear, show;
+
+def watch(tail):
+  ipc::subscribe(["window", "workspace"]) |
+  ipc::get_tree | clear, show(tail);
 
 ipc::get_tree | show
