@@ -42,33 +42,34 @@ def show(head; tail):
     end;
 
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
-    ($prefix + $prefix_child) as $prefix_child |
     (tree::focus_child.id // null) as $focus_id |
     (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
     "\(head)\($prefix)\($prefix_parent)\(node | invert) \(tail // "")",
-    foreach tree::children as $node (
+    foreach (.nodes[], .floating_nodes[]) as $node (
       # Init:
       $on_focus_path;
       # Update:
       . and $node.id != $focus_id;
       # Extract:
-      . as $waiting_for_focus |
+      . as $prefocus |
       $node |
-      if .id != $last_id then
-        if $on_focus_path and .id == $focus_id then
-          show_aux($prefix_child; " │  "; " ┡━━"; true)
-        elif $waiting_for_focus then
-          show_aux($prefix_child; " ┃  "; " ┠──"; false)
+      ($on_focus_path and .id == $focus_id) as $focus |
+      [ if .id != $last_id then
+          if $focus      then "│", "┡"
+          elif $prefocus then "┃", "┠"
+          else                "│", "├"
+          end
         else
-          show_aux($prefix_child; " │  "; " ├──"; false)
-        end
-      else
-        if $on_focus_path and .id == $focus_id then
-          show_aux($prefix_child; "    "; " ┗━━"; true)
+          " ",
+          if $focus then "┗" else "└" end
+        end,
+        if .type == "floating_con" then
+          if $focus then "┅┅" else "┄┄" end
         else
-          show_aux($prefix_child; "    "; " └──"; false)
+          if $focus then "━━" else "──" end
         end
-      end
+      ] as [$x, $y, $z] |
+      show_aux($prefix + $prefix_child; "  \($x) "; "  \($y)\($z)"; $focus)
     );
 
   show_aux(""; ""; ""; true);
