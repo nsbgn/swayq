@@ -29,25 +29,15 @@ def underline: _ansi(4);
 def invert: _ansi(7);
 def clear: _ansi_escape + "[2J" + _ansi_escape + "[H";
 
-def layout:
-  .layout |
-  if . == "splith" then
-    "↔️ "
-  elif . == "splitv" then
-    "↕️ "
-  elif . == "tabbed" then
-    "🗂️"
-  elif . == "stacked" then
-    "📑"
-  else . end;
-
-
 def show(head; tail):
+  def layout:
+    {splith: "H", splitv: "V", tabbed: "T", "stacked": "S"}[.layout];
+
   def node:
-    if .type == "root" then " / "
-    elif .type == "output" then " M "
-    elif .type == "workspace" then " W "
-    elif .layout != "none" then " T "
+    if .type == "root" then " - "
+    elif .type == "output" then " o "
+    elif .type == "workspace" then " \(layout) "
+    elif .layout != "none" then "·\(layout)·"
     else ""
     end;
 
@@ -56,7 +46,7 @@ def show(head; tail):
     (tree::focus_child.id // null) as $focus_id |
     (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
     "\(head)\($prefix)\($prefix_parent)\(node | invert) \(tail // "")",
-    foreach (.nodes[], .floating_nodes[]) as $node (
+    foreach tree::children as $node (
       # Init:
       $on_focus_path;
       # Update:
@@ -91,15 +81,15 @@ def show:
     if .type == "root" then
       ""
     elif .type == "output" then
-      "\(.name | bold)"
+      "output \(.name)" | bold
     elif .type == "workspace" then
-      "\(.name | bold) \(layout)"
+      "workspace \(.name)" | bold
     elif .layout != "none" then
-      layout
+      "tile"
     else
-      "\(.app_id | italic) \(.name | truncate(30))"
+      "\(.app_id | italic) - \(.name | truncate(30))"
     end;
-  show(tail);
+  show(head; tail);
 
 def watch:
   ipc::subscribe(["window", "workspace"]) |
