@@ -7,6 +7,7 @@ module {
 
 import "i3jq@ipc" as ipc;
 import "i3jq@tree" as tree;
+import "i3jq@ansi" as ansi;
 
 def hex:
   (. / 16 | floor | if . > 0 then hex else "" end)
@@ -20,14 +21,6 @@ def truncate($n):
   if length > $n then
     "\(.[0:$m - 2])(…)\(.[length - $m + 1:length])"
   end;
-
-def _ansi($i):
-  "\(_ansi_escape)[\($i)m\(.)\(_ansi_escape)[0m";
-def bold: _ansi(1);
-def italic: _ansi(3);
-def underline: _ansi(4);
-def invert: _ansi(7);
-def clear: _ansi_escape + "[2J" + _ansi_escape + "[H";
 
 def show(head; tail):
   def layout:
@@ -44,7 +37,7 @@ def show(head; tail):
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
     (tree::focus_child.id // null) as $focus_id |
     (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
-    "\(head)\($prefix)\($prefix_parent)\(node | invert) \(tail // "")",
+    "\(head)\($prefix)\($prefix_parent)\(node | ansi::invert) \(tail // "")",
     foreach (.nodes[], .floating_nodes[]) as $node (
       # Init:
       $on_focus_path;
@@ -82,22 +75,22 @@ def show:
     if .type == "root" then
       ""
     elif .type == "output" then
-      "output \(.name)" | bold
+      "output \(.name)" | ansi::bold
     elif .type == "workspace" then
-      "workspace \(.name)" | bold
+      "workspace \(.name)" | ansi::bold
     elif .layout != "none" then
       "tile"
     else
-      "\(.app_id | italic) - \(.name | truncate(30))"
+      "[\(.app_id | ansi::italic)] \(.name | truncate(30))"
     end;
   show(head; tail);
 
 def watch:
   ipc::subscribe(["window", "workspace"]) |
-  ipc::get_tree | clear, show;
+  ipc::get_tree | ansi::clear, ansi::curpos(1; 1), show;
 
 def watch(tail):
   ipc::subscribe(["window", "workspace"]) |
-  ipc::get_tree | clear, show(tail);
+  ipc::get_tree | ansi::clear, ansi::curpos(1; 1), show(tail);
 
 ipc::get_tree | show

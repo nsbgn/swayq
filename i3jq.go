@@ -53,11 +53,6 @@ func main() {
 	if query != nil {
 		code, err := gojq.Compile(query,
 			gojq.WithModuleLoader(&loader),
-			gojq.WithFunction("_ansi_escape", 0, 0, func(_ any, _ []any) any {
-				// The JSON spec allows only Unicode strings, so ANSI escape
-				// codes are impossible. But we can just add them internally.
-				return "\u001B"
-			}),
 			gojq.WithIterFunction("_i3jq", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
 				if !ok0 {
