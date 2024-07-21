@@ -11,7 +11,7 @@ import (
 
 
 func main() {
-	var fileFlag = flag.String("m", "", "Load module from file")
+	var fileFlag = flag.String("m", "show", "Load module from file")
 	var quietFlag = flag.Bool("q", false, "Do not print values")
 	var rawFlag = flag.Bool("r", true, "Print raw values")
 	var helpFlag = flag.Bool("h", false, "Show help")
@@ -27,15 +27,11 @@ func main() {
 	loader := i3jqModuleLoader{}
 
 	var query_file *gojq.Query
-	if *fileFlag != "" {
-		q, err := loader.LoadModule(*fileFlag)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		query_file = q
-	} else {
-		query_file = LoadBuiltin("base")
+	q, err := loader.LoadModule(*fileFlag)
+	if err != nil {
+		log.Fatalln(err)
 	}
+	query_file = q
 
 	var query_arg *gojq.Query
 	if len(args) > 0 {

@@ -3,36 +3,31 @@ module {
   description: "Filters for navigating the layout tree."
 };
 
+# All direct child nodes, both tiled and floating
 def children:
   .nodes[], .floating_nodes[];
 
 # Descend tree structure one level, into the nth focused node
 def focus_child($n):
-  # We assume that the nth item in the focus list exists among the nodes
-  .focus[$n] as $id
-  | .floating_nodes[], .nodes[]
-  | select(.id == $id);
-
+  .focus[$n] as $id | children | select(.id == $id);
 def focus_child:
   focus_child(0);
 
 # Descend the focused containers until arriving at a container that satisfies
-# the given condition. For example, to find the focused workspace, do
-# `focus(.type == "workspace")`.
-def focus(cond):
-  until(cond; focus_child);
-
-# Descend the focused containers until arriving at a leaf
+# the given condition (or a leaf node, if no condition is given). For example,
+# to find the focused workspace, do `focus(.type == "workspace")`.
+def focus(condition):
+  until(condition; focus_child);
 def focus:
-  focus(isempty(children));
-
-# Find a unique node
-def find(condition):
-  first(recurse(children) | select(condition)) // null;
+  focus(.nodes == [] and .floating_nodes == []);
 
 # Find all nodes that satisfy a condition
 def find_all(condition):
   recurse(children) | select(condition);
+
+# Find a unique node
+def find(condition):
+  first(find_all(condition)) // null;
 
 # `lineage` traverses the tree to produce all lists of nodes that are visited
 # on the way to the target nodes. The lists are in reverse chronological order.

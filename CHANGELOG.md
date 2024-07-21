@@ -1,5 +1,16 @@
 # Changelog
 
+### 0.1.3 (2024-07-21)
+
+-   The `show` module has been added, for text-based visualizations of 
+    the tiling tree.
+-   ANSI escape sequences may now be used via the newly added `ansi` 
+    module.
+-   The `show` module has been made the default. As a result, all its 
+    functions are available on the CLI without further switches: running 
+    `i3jq` without arguments will pretty-print a visualization of the 
+    layout tree, and `i3jq watch` will do so continuously.
+
 ### 0.1.2 (2024-07-12)
 
 -   Add `lineage/0`, `lineage/1` and `lineage/2` builtins.
