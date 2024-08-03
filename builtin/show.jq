@@ -62,7 +62,7 @@ def show(head; tail):
           if $focus then "━━" else "──" end
         end
       ] as [$x, $y, $z] |
-      show_aux($prefix + $prefix_child; "  \($x) "; "  \($y)\($z)"; $focus)
+      show_aux($prefix + $prefix_child; " \($x)  "; " \($y)\($z)"; $focus)
     );
 
   show_aux(""; ""; ""; true);
