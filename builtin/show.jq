@@ -70,7 +70,7 @@ def show(tail):
   show(" "; tail);
 
 def show:
-  def head: .id | hex | pad(8) + " ";
+  def head: .id | if . < 2147483646 then tostring else "·" end | pad(5) + " ";
   def tail:
     if .type == "root" then
       ""
