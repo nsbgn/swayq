@@ -1,6 +1,5 @@
 PREFIX?=/usr/local
 GO?=$(word 1,$(wildcard /usr/lib/go-1.21/bin/go) $(shell which go))
-BIN:=i3jq
 REVISION=$(shell git rev-parse --short HEAD)
 LDFLAGS="-s -w -X 'main.Version=$(REVISION)'"
 
@@ -10,21 +9,22 @@ BUILTIN_JQ = $(wildcard builtin/*.jq)
 all: build
 
 .PHONY: build
-build: $(BIN)
+build: i3jq
 
 .PHONY: clean
 clean:
-	rm -rf $(BIN) builtin.go
+	rm -rf i3jq builtin.go
 	go clean
 
 .PHONY: install
 install: i3jq
 	mkdir -p ${PREFIX}/bin/
 	install -m755 i3jq ${PREFIX}/bin/
+	ln -s ${PREFIX}/bin/i3jq ${PREFIX}/bin/swayjq
 
 .PHONY: uninstall
 uninstall:
-	rm -rf ${PREFIX}/bin/i3jq
+	rm -rf ${PREFIX}/bin/i3jq ${PREFIX}/bin/swayjq
 
 .PRECIOUS: builtin.go
 builtin.go: builtin.generator.go ${BUILTIN_JQ}
