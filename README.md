@@ -51,7 +51,7 @@ the current working directory, `~/.config/i3jq`, `~/.jq` and
 `$ORIGIN/../lib/jq`. To run an `i3jq` script within Sway or i3, add a 
 line like this to your configuration:
 
-    exec i3jq -m contrib/layout/master-stack
+    exec i3jq -m contrib/master-stack
 
 Please view the filters in [`builtin/`](./builtin/) for detailed 
 information on the available modules and the functions defined within.
