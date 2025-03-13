@@ -5,9 +5,9 @@ module {
 
 # cf. <https://en.wikipedia.org/wiki/Box_Drawing>
 
-import "i3jq@ipc" as ipc;
-import "i3jq@tree" as tree;
-import "i3jq@ansi" as ansi;
+import "builtin/ipc" as ipc;
+import "builtin/tree" as tree;
+import "builtin/ansi" as ansi;
 
 def hex:
   (. / 16 | floor | if . > 0 then hex else "" end)

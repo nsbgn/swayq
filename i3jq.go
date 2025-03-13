@@ -53,7 +53,7 @@ func main() {
 	if query != nil {
 		code, err := gojq.Compile(query,
 			gojq.WithModuleLoader(&loader),
-			gojq.WithIterFunction("_i3jq", 3, 3, func(_ any, xs []any) gojq.Iter {
+			gojq.WithIterFunction("_internal", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
 				if !ok0 {
 					return gojq.NewIter(errors.New("messageType param must be an int"))
