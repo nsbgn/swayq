@@ -1,9 +1,8 @@
 module {
   name: "ipc",
-  description: "Filters for inter-process communication."
+  description: "Filters for inter-process communication (IPC) as defined in <https://i3wm.org/docs/ipc.html>."
 };
 
-# IPC as defined in <https://i3wm.org/docs/ipc.html>
 def run_command($payload): _internal(0; $payload; false);
 def get_workspaces: _internal(1; null; false);
 def subscribe($payload): _internal(2; $payload | tostring; true);

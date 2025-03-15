@@ -8,18 +8,18 @@ def children:
   .nodes[], .floating_nodes[];
 
 # Descend tree structure one level, into the nth focused node
-def focus_child($n):
+def focused_child($n):
   .focus[$n] as $id | children | select(.id == $id);
-def focus_child:
-  focus_child(0);
+def focused_child:
+  focused_child(0);
 
 # Descend the focused containers until arriving at a container that satisfies
 # the given condition (or a leaf node, if no condition is given). For example,
 # to find the focused workspace, do `focus(.type == "workspace")`.
-def focus(condition):
-  until(condition; focus_child);
-def focus:
-  focus(.nodes == [] and .floating_nodes == []);
+def focused(condition):
+  until(condition; focused_child);
+def focused:
+  focused(.nodes == [] and .floating_nodes == []);
 
 # Find all nodes that satisfy a condition
 def find_all(condition):
@@ -46,7 +46,7 @@ def lineage(target; child):
 def lineage(target):
   lineage(target; children);
 def lineage:
-  lineage(isempty(focus_child); focus_child);
+  lineage(isempty(focused_child); focused_child);
 
 # Find scratchpad workspace from root node
 def scratchpad:

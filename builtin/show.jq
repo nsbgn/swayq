@@ -35,7 +35,7 @@ def show(head; tail):
     end;
 
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
-    (tree::focus_child.id // null) as $focus_id |
+    (tree::focused_child.id // null) as $focus_id |
     (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
     "\(head)\($prefix)\($prefix_parent)\(node | ansi::invert) \(tail // "")",
     foreach (.nodes[], .floating_nodes[]) as $node (
