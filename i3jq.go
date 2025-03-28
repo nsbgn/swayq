@@ -53,6 +53,7 @@ func main() {
 	if query != nil {
 		code, err := gojq.Compile(query,
 			gojq.WithModuleLoader(&loader),
+			gojq.WithEnvironLoader(os.Environ),
 			gojq.WithIterFunction("_internal", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
 				if !ok0 {
