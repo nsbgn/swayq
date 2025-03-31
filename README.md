@@ -18,7 +18,7 @@ This repository contains the `i3jq` application, which adds internal
 functions corresponding to i3's [IPC spec][ipc] on top of 
 [`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`. It also 
 offers a `tree` module for navigating the layout tree. Finally, in the 
-[`contrib/`](./contrib/) directory, you will find filters to achieve 
+[`modules/`](./modules/) directory, you will find filters to achieve 
 some useful behaviour.
 
 Much of this would also be achievable with a simple shell script that 
@@ -54,7 +54,7 @@ to [`show`](./builtin/show.jq), so that a formatted layout tree is
 generated when no arguments are provided. Modules are searched for in 
 the current working directory, `~/.config/i3jq`, `~/.jq` and 
 `$ORIGIN/../lib/jq`. Please view the files in [`builtin/`](./builtin/) 
-for detailed information on the available modules and the functions 
+for detailed information on the builtin modules and the functions 
 defined within.
 
 The second optional argument is a jq filter which is executed within the 
