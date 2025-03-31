@@ -40,22 +40,30 @@ Make sure you have at least [Go][go] 1.21 installed. Then run:
 
 You can write a filter to execute a command:
 
-    i3jq 'ipc::get_tree | tree::find(.app_id == "X") | ipc::run_command("[con_id=\(.id)] mark X")'
+    ipc::get_tree |
+    tree::find(.app_id == "X") |
+    ipc::run_command("[con_id=\(.id)] mark X")'
 
 ... or to listen to events:
 
-    i3jq 'ipc::subscribe(["window"]) | .container.name // empty'
+    ipc::subscribe(["window"]) |
+    .container.name // empty
 
-You can load a module with the `-m` flag. Modules are searched for in 
+The first argument to the program is the module to load. This defaults 
+to [`show`](./builtin/show.jq), so that a formatted layout tree is 
+generated when no arguments are provided. Modules are searched for in 
 the current working directory, `~/.config/i3jq`, `~/.jq` and 
-`$ORIGIN/../lib/jq`. To run an `i3jq` script within Sway or i3, add a 
-line like this to your configuration:
+`$ORIGIN/../lib/jq`. Please view the files in [`builtin/`](./builtin/) 
+for detailed information on the available modules and the functions 
+defined within.
 
-    exec i3jq -m contrib/master-stack
+The second optional argument is a jq filter which is executed within the 
+context of the module.
 
-Please view the filters in [`builtin/`](./builtin/) for detailed 
-information on the available modules and the functions defined within.
+To run an `i3jq` script within Sway or i3, add a line like this to your 
+configuration:
 
+    exec i3jq master-stack
 
 [i3]: https://i3wm.org/
 [ipc]: https://i3wm.org/docs/ipc.html
