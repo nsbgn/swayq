@@ -11,7 +11,6 @@ import (
 
 
 func main() {
-	var fileFlag = flag.String("m", "show", "Load module from file")
 	var quietFlag = flag.Bool("q", false, "Do not print values")
 	var rawFlag = flag.Bool("r", true, "Print raw values")
 	var helpFlag = flag.Bool("h", false, "Show help")
@@ -19,23 +18,27 @@ func main() {
 	var args = flag.Args()
 
 	if *helpFlag {
-		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION...] [QUERY] [ARGS...]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION...] [MODULE] [QUERY] [ARGS...]\n\n", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
 
-	loader := i3jqModuleLoader{}
+	loader := i3qModuleLoader{}
 
-	var query_file *gojq.Query
-	q, err := loader.LoadModule(*fileFlag)
+	var query_path = "show"
+	if len(args) > 0 {
+		query_path = args[0]
+	}
+	q, err := loader.LoadModule(query_path)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	var query_file *gojq.Query
 	query_file = q
 
 	var query_arg *gojq.Query
-	if len(args) > 0 {
-		q, err := gojq.Parse(args[0])
+	if len(args) > 1 {
+		q, err := gojq.Parse(args[1])
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -72,7 +75,7 @@ func main() {
 					return gojq.NewIter(errors.New("payload param must be a string"))
 				}
 
-				iter, err := i3jq_ipc(messageType, payload, keepAlive)
+				iter, err := i3q_ipc(messageType, payload, keepAlive)
 				if err != nil {
 					return gojq.NewIter(err)
 				} else {
