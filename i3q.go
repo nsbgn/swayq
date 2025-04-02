@@ -23,7 +23,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	loader := i3jqModuleLoader{}
+	loader := i3qModuleLoader{}
 
 	var query_path = "show"
 	if len(args) > 0 {
@@ -75,7 +75,7 @@ func main() {
 					return gojq.NewIter(errors.New("payload param must be a string"))
 				}
 
-				iter, err := i3jq_ipc(messageType, payload, keepAlive)
+				iter, err := i3q_ipc(messageType, payload, keepAlive)
 				if err != nil {
 					return gojq.NewIter(err)
 				} else {

@@ -116,7 +116,7 @@ func get_socket() string {
 
 var socket = get_socket()
 
-func i3jq_ipc(msgType int, msg *string, keep_alive bool) (*connection, error) {
+func i3q_ipc(msgType int, msg *string, keep_alive bool) (*connection, error) {
 	conn, err := net.Dial("unix", socket)
 	if err != nil {
 		return nil, err
