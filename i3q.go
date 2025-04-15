@@ -25,7 +25,7 @@ func main() {
 
 	loader := i3qModuleLoader{}
 
-	var query_path = "show"
+	var query_path = "default"
 	if len(args) > 0 {
 		query_path = args[0]
 	}
