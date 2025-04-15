@@ -20,7 +20,7 @@ clean:
 install: i3q
 	mkdir -p ${PREFIX}/bin/
 	install -m755 i3q ${PREFIX}/bin/
-	ln -s ${PREFIX}/bin/i3q ${PREFIX}/bin/swayq
+	ln -sf ${PREFIX}/bin/i3q ${PREFIX}/bin/swayq
 
 .PHONY: uninstall
 uninstall:
