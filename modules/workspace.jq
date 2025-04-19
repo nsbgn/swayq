@@ -25,7 +25,7 @@ def free:
 def extend_with_free_workspace:
   if any(.focus == []) | not then
     first(free) as $free |
-    indexl(.num >= $free) as $i |
+    (indexl(.num >= $free) // length) as $i |
     .[:$i] + [{num: $free}] + .[$i:]
   end;
 
