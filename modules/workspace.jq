@@ -35,7 +35,15 @@ def neighbour($offset):
   map(select(.output == $output)) |
   extend_with_free_workspace |
   .[(indexl(.focused) + $offset) % length].num |
-  ipc::run_command("workspace number \(.); move workspace to \($output)");
+  {num: ., output: $output};
 
-def prev: neighbour(-1);
-def next: neighbour(1);
+def focus_neighbour($offset):
+  neighbour($offset) as {$num, $output} |
+  ipc::run_command("workspace number \($num); move workspace to \($output)");
+
+def move_to_neighbour($offset):
+  neighbour($offset) as {$num, $output} |
+  ipc::run_command("move workspace \($num); workspace number \($num); move workspace to \($output)");
+
+def prev: focus_neighbour(-1);
+def next: focus_neighbour(1);
