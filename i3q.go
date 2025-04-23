@@ -53,10 +53,27 @@ func main() {
 		query = query_file
 	}
 
+	// Pass command-line arguments through
+	nargs := len(args) - 2
+	if (nargs < 0) {
+		nargs = 0
+	}
+	positional := make([]any, nargs)
+	if (nargs > 0) {
+		for i, arg := range args[2:] {
+			positional[i] = arg
+		}
+	}
+	varArgs := map[string]any{
+	 	"named": map[string]any{},
+	 	"positional": positional,
+	 }
+
 	if query != nil {
 		code, err := gojq.Compile(query,
 			gojq.WithModuleLoader(&loader),
 			gojq.WithEnvironLoader(os.Environ),
+			gojq.WithVariables([]string{"$ARGS"}),
 			gojq.WithIterFunction("_internal", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
 				if !ok0 {
@@ -87,7 +104,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		iter := code.Run(nil)
+		iter := code.Run(nil, varArgs)
 		for {
 			val, ok := iter.Next()
 			if !ok {
