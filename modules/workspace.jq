@@ -14,8 +14,9 @@ def indexl(condition):
 
 # Find the free workspaces. Input: ipc::get_workspaces
 def free:
+  # Get monotonically increasing workspace numbers
   map(.num) | sort |
-  # Having monotonically increasing numbers of workspaces, find those missing…
+  # Then find the missing intermediate numbers…
   foreach .[] as $x ({a: 1, b: 1}; {a: .b, b: $x}; range(.a + 1; .b)),
   # … plus one extra number at the end
   .[-1] + 1;
@@ -32,7 +33,7 @@ def neighbour($offset):
     (indexl(.num >= $free) // length) as $i |
     .[:$i] + [{num: $free}] + .[$i:]
   end |
-  # Select the next workspace in that list
+  # Select the workspace at the given distance from the focused one
   .[(indexl(.focused) + $offset) % length].num |
   {num: ., output: $output};
 
@@ -44,5 +45,12 @@ def move_to_neighbour($offset):
   neighbour($offset) as {$num, $output} |
   ipc::run_command("move workspace \($num); workspace number \($num); move workspace to \($output)");
 
-def prev: focus_neighbour(-1);
-def next: focus_neighbour(1);
+def direction:
+  $ARGS.positional[0] as $dir |
+  if $dir == "prev" then -1 elif $dir == "next" or $dir == null then 1 else error end;
+
+def focus:
+  focus_neighbour(direction);
+
+def move:
+  move_to_neighbour(direction);
