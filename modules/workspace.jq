@@ -12,28 +12,27 @@ import "builtin/tree" as tree;
 def indexl(condition):
   . as $x | first(range(length) | select($x[.] | condition)) // null;
 
-# In a list of monotonically increasing integers, find the missing integers
-def intermediates:
-  foreach .[] as $x ({a: .[0], b: .[0]}; {a: .b, b: $x}; range(.a + 1; .b));
-
-# Find the free workspaces.
+# Find the free workspaces. Input: ipc::get_workspaces
 def free:
-  if . == null then ipc::get_workspaces end |
-  map(.num) | range(1; .[0]), intermediates, .[-1] + 1;
-
-# Extend the list of occupied workspaces plus an empty workspace
-def extend_with_free_workspace:
-  if any(.focus == []) | not then
-    first(free) as $free |
-    (indexl(.num >= $free) // length) as $i |
-    .[:$i] + [{num: $free}] + .[$i:]
-  end;
+  map(.num) | sort |
+  # Having monotonically increasing numbers of workspaces, find those missing…
+  foreach .[] as $x ({a: 1, b: 1}; {a: .b, b: $x}; range(.a + 1; .b)),
+  # … plus one extra number at the end
+  .[-1] + 1;
 
 def neighbour($offset):
-  ipc::get_workspaces |# sort_by(.num) |
+  ipc::get_workspaces |
+  # Remember the first free workspace
+  first(free) as $free |
+  # Select only the workspaces on the current output
   (.[] | select(.focused).output) as $output |
   map(select(.output == $output)) |
-  extend_with_free_workspace |
+  # Extend the current list of workspaces with an empty workspace if necessary
+  if any(.focus == []) | not then
+    (indexl(.num >= $free) // length) as $i |
+    .[:$i] + [{num: $free}] + .[$i:]
+  end |
+  # Select the next workspace in that list
   .[(indexl(.focused) + $offset) % length].num |
   {num: ., output: $output};
 
