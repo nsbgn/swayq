@@ -81,7 +81,12 @@ def show:
     elif .layout != "none" then
       "tile"
     else
-      "[\(.app_id | ansi::italic)] \(.name | truncate(30))"
+      "{\(.app_id | ansi::italic)} \(.name | truncate(30))"
+    end +
+    if .marks != [] then
+      " [\(.marks | join(","))]"
+    else
+      ""
     end;
   show(head; tail);
 
