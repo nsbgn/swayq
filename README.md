@@ -3,10 +3,20 @@
 *This application is still rough around the edges and interfaces may 
 change without warning.*
 
+`i3q` allows you to programmatically control the window managers [i3] 
+and [Sway].
+
+The application adds internal functions corresponding to i3's [IPC 
+spec][ipc] on top of [`gojq`][gojq], such as `ipc::subscribe` and 
+`ipc::run_command`. In the [`modules/`](./modules/) directory, you will 
+find filters to achieve some useful behaviour.
+
+## Rationale
+
 To programmatically control the window manager [i3] or its younger 
-sibling [Sway][sway], you might use a library like [go-i3] or [i3ipc]. 
-The library sends and receives some JSON on your behalf, translates it 
-to a native structure, and allows you to do your thing.
+sibling [Sway], you might use a library like [go-i3] or [i3ipc]. The 
+library sends and receives some JSON on your behalf, translates it to a 
+native structure, and allows you to do your thing.
 
 But why not use a language that is already tailor-made for JSON 
 transformations: [jq]? This allows you to closely follow i3's original 
@@ -14,20 +24,12 @@ transformations: [jq]? This allows you to closely follow i3's original
 while staying closer to the speed of a compiled program — and the result 
 is often much terser than either!
 
-This repository contains the `i3q` application, which adds internal 
-functions corresponding to i3's [IPC spec][ipc] on top of 
-[`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`. It also 
-offers a `tree` module for navigating the layout tree. Finally, in the 
-[`modules/`](./modules/) directory, you will find filters to achieve 
-some useful behaviour.
-
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3q` 
 binary offers some advantages, like the ability communicate with i3 at 
 any point during processing, which makes for more efficient and readable 
 scripts. Moreover, you will presumably run these commands quite often, 
 so a low footprint is desirable.
-
 
 ## Installation
 
@@ -68,7 +70,7 @@ configuration:
 [i3]: https://i3wm.org/
 [ipc]: https://i3wm.org/docs/ipc.html
 [cmd]: https://i3wm.org/docs/userguide.html#list_of_commands
-[sway]: https://swaywm.org/
+[Sway]: https://swaywm.org/
 [swayfx]: https://github.com/WillPower3309/swayfx
 [go]: https://go.dev/
 [jq]: https://jqlang.github.io/jq/
