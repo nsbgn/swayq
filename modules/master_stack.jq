@@ -1,16 +1,45 @@
-# This is a long-running script that implements a master-stack layout. That
-# means that there is one "main" window and any additional window gets stacked
-# to the side. An additional feature is an "overflow" number, which determines
-# how many windows can be in view at the same time before.
+# The n-overflow layout is a generalization of layouts such as master-stack and
+# fibonacci. In it, a container follows a schema that tells it to accommodate
+# at most $n$ child leaves (growing either forward or backwards, and inserting
+# new windows either at the beginning or at the end) until the next one is
+# split and additional windows spill into this 'overflow container'. This
+# container, in turn, follows its own schema, and so on. 
+#
+# A key consideration in the design of this approach to dynamic tiling is that
+# it must be seamless. That is, no assumptions must be made about the state of
+# the layout tree before the script takes effect, and there must be no moments
+# of flickering as the script responds to events and windows move into place.
 
 import "builtin/ipc" as ipc;
 import "builtin/tree" as tree;
 
-def INITIAL_STATE: {
-  master: "left",
-  overflow: 2,
-  overflow_layout: "stacked",
-  # insert: end | beginning | before | after
+def default: {
+  capacity: infinite,
+  size: 0.5,
+  forward: true,
+  layout: null,
+  overflow: null
+};
+
+def master_stack: {
+  capacity: 2,
+  size: 0.5,
+  layout: "splith",
+  forward: false,
+  insertion: true,
+  overload: {
+    layout: "splitv"
+  }
+};
+
+def fibonacci: {
+  capacity: 2,
+  size: 0.5,
+  layout: "splith",
+  forward: true,
+  overload: {
+    layout: "splitv"
+  }
 };
 
 # The mark to which to send new windows
@@ -56,18 +85,6 @@ def axis:
   elif . == "bottom" or . == "top" then 1 # vertical axis
   else "Unknown axis '\(.)'" | error end;
 
-# Is the container in the correct layout?
-def is_layout($orientation):
-  .nodes |
-  length == 0 or (length == 1 and .[0] | (
-    ["splith", "splitv"] as $split |
-    ($orientation | axis) as $axis |
-    ($orientation | position) as $i |
-    .layout == $split[$axis]
-    and .nodes[$i].layout == $split[1-$axis]
-    and all(.nodes[:$i], .nodes[$i+1:], .nodes[$i].nodes[]; .layout == "none")
-  ));
-
 # Ensure that all marks are in the correct spot. We can assume that the layout
 # is correct here; if it isn't, it will be fixed later.
 def ensure_marks($orientation):
@@ -79,91 +96,67 @@ def ensure_marks($orientation):
   mark(INSERT),
   mark(SWAP; $monocle);
 
-# Organize a workspace into a master-stack layout. The master-stack layout is a
-# single container at the top level (the holder) containing one leaf window
-# (the master) and potentially one more container (the stack). The latter
-# contains the rest of the leaf windows. This filter makes no assumption about
-# the current state of the layout tree.
-def apply_layout($orientation):
-  tree::find(any(.marks[]; . == SWAP)) as $swap_mark_available |
-  "hv" as $split |
-  ($orientation | axis) as $axis |
-  ($orientation | position) as $i |
-  $split[$axis] as $orientn_holder |
-  $split[1-$axis] as $orientn_stack |
+# Normalize a workspace or container into an n-overflow layout. This is a
+# subtler affair than it may at first appear, because, for a seamless
+# experience, we send all our commands to the window manager in a single IPC
+# message. Therefore, we cannot take the input layout tree at face value: some
+# containers may have vanished and others may have appeared. We make sure that,
+# at each step, we can access the container's id and the attributes of any
+# child that is not (and does not have any descendants of) a container that may
+# have already moved.
+def normalize($schema):
+  normalize($schema, [tree::leaves]);
+def normalize($schema; $leaves):
+  (default + $schema) as {$forward, $capacity, $layout, $overflow} |
 
-  # If the workspace is now entirely empty, we just need to make sure that any
-  # new window opened won't appear in some other workspace.
-  if (.nodes | length) == 0 then
-    "unmark \(SWAP); unmark \(INSERT)"
+  # Organize $leaves into $leaders and $followers, according to the
+  # schema's capacity and direction. $followers are those windows that are in
+  # the overflow and $leaders are those that are not.
+  if $forward then
+    [$leaves[:$capacity], $leaves[$capacity:]]
   else
-    # Otherwise, we can descend into the holder.
-    # TODO: Move excess windows
-    [.nodes[1:].[] | tree::leaves] as $excess |
-    .nodes[0] |
-    . as $holder |
-    (.nodes | length) as $n_holder |
+    [$leaves[-$capacity:], $leaves[:-$capacity]]
+  end as [$leaders, $followers] |
 
-    # If the holder is itself a leaf node, it needs to be split and correct
-    # marks set
-    if $n_holder == 0 then
-      mark(INSERT),
-      mark(SWAP; $i == 0),
-      "[con_id=\(.id)] split \($orientn_holder)"
-    # Otherwise, at least make sure that the holder has the correct layout
-    else
-      if .layout != "split\($orientn_holder)" then
-        "[con_id=\(.nodes[0].id)] layout split\($orientn_holder)"
-      else
-        empty
-      end
-    end,
+  # Determine the $overflow_node. This is either the first non-leaf child that
+  # does not contain any $leaders, or otherwise the first of the $followers.
+  ( first(.nodes[] | select(
+      .layout != "none" and
+      all($leaders[]; .id as $id | tree::find(.id == $id) == null)))
+    // $followers[if $forward then 0 else -1 end]
+  ) as $overflow_node |
 
-    # If it is split already, but contains only one node:
-    if $n_holder == 1 then
-      .nodes[0] |
+  if $forward then
+    $leaders + [$overflow_node // empty]
+  else
+    [$overflow_node // empty] + $leaders
+  end as $content |
 
-      # If it contains just a leaf window, that is the master window; mark
-      # accordingly.
-      if .layout == "none" then
-        mark(INSERT),
-        mark(SWAP; $i == 0)
-      # Otherwise, we are dealing with a bare stack.
-      # When there is only one top-level node, we want to assume that there
-      # is also just one master window, but that might not be true if we just
-      # closed the previous master window. Then this node is the stack. In
-      # that case, we select the second most recently focused window in this
-      # stack and promote it to master
-      else
-        [tree::leaves] as $leaves |
-        $leaves[$i] as $master |
-        . as $stack |
-        "[con_id=\($stack.id)] mark --add _swayq_stack",
-        ($leaves.[] | select(.id != $master.id) | "[con_id=\(.id)] move to mark _swayq_stack"),
-        "[con_id=\($stack.id)] unmark _swayq_stack",
-        "[con_id=\($holder.id)] mark --add _swayq_holder",
-        "[con_id=\($master.id)] move to mark _swayq_holder",
-        "[con_id=\($holder.id)] unmark _swayq_holder"
-      end
+  # If the current container is a leaf, split it according to the schema.
+  if .layout != $layout then 
+    #TODO
+    "[con_id=\(.id)] layout \($layout)"
+  else
+    empty
+  end,
 
-    # We already have both a master and stack container
-    # TODO: We assume that we *only* have these
-    elif $n_holder > 1 then
-      .nodes[-(1+$i)] as $master |
-      .nodes[$i] as $stack |
-      $stack |
-      if .layout == "none" then
-        mark(INSERT),
-        "[con_id=\(.id)] split \($split[1-$axis])"
-      else
-        tree::focused |
-        mark(INSERT)
-      end,
-      mark(SWAP; false)
-    else
-      empty
-    end
-  end;
+  # If the current container's children are not yet in the correct position,
+  # then move all leaders and the $overflow_node (or vice versa) to this
+  # container.
+  if [.nodes[].id] != [$content[].id] then
+    "[con_id=\(.id)] mark --add _swayq_overflow_moving",
+    (
+      $content[] |
+      # TODO
+      "[con_id=\(.id)] move to mark _swayq_overflow_moving"
+    ),
+    "[con_id=\(.id)] unmark _swayq_overflow_moving"
+  else
+    empty
+  end,
+
+  # Finally, recursively apply the normalization step to the $overflow_node.
+  ($overflow_node // empty | normalize($overflow; $followers));
 
 def init:
   # To instantly put new tiling windows where they belong, without a moment of 
@@ -177,21 +170,30 @@ def main:
   do(init),
   foreach ipc::subscribe(["workspace", "window", "tick"]) as $e (
     {stack: "left"};
-    if $e.event == "tick" then
-      {stack: .stack, payload: $e.payload}
-    end;
-    . as {$stack} | $e |
+    .;
+    # if $e.event == "tick" then
+    #   {stack: .stack, payload: $e.payload}
+    # end;
+    . as $schema | $e |
     if is_event("window"; "new", "close") or is_event("workspace"; "focus") then
       do(
         ipc::get_tree |
         tree::focused(.type == "workspace") |
-        apply_layout($stack)
+
+        # If the workspace is now entirely empty, we just need to make sure that any
+        # new window opened won't appear in some other workspace.
+        if .nodes | length == 0 then
+          "unmark \(SWAP); unmark \(INSERT)"
+        else
+          normalize($schema)
+        end
       )
     elif is_event("window"; "focus") then
       do(
         ipc::get_tree |
         tree::focused(.type == "workspace") |
-        ensure_marks($stack)
+        empty
+        # ensure_marks($schema)
       )
     else
       empty
