@@ -21,34 +21,50 @@ def base: {
   # The proportion of space to be dedicated to each node
   size: 1,
 
-  # Whether the layout should grow forward (ie the overflow node appears at the
-  # end) or backward
-  forward: true,
+  # Where should new nodes be inserted if this container gets to choose?
+  # Possible values are "before" and "after", being relative to the focused
+  # container, or "first" and "last", relative to the current container.
+  insert: "after",
 
-  # Whether new windows should be front-loaded or appear in the overflow node
-  insertion: "", # before focus / after focus / first / last
+  # Which node should be the overflow container?
+  overflow: "last",
+  # Could later be an index number from 0 to $capacity (or -$capacity-1 to -1)
 
   # The layout of this container
   layout: "splith", # TODO: Determine from workspace
 
-  # The schema for the overflow node
-  overflow: {}
+  # The schema for the overflow node, if not the same as the root schema
+  subschema: null
 };
 
 def master_stack: {
   capacity: 2,
   layout: "splith",
-  overflow: {
+  insert: "after",
+  overflow: "last",
+  subschema: {
     capacity: infinite,
-    layout: "splitv"
+    layout: "splitv",
+    insert: "first"
   }
 };
 
 def fibonacci: {
   capacity: 2,
   layout: "splith",
-  overflow: {
-    layout: "splitv"
+  insert: "first",
+  overflow: "last",
+  subschema: {
+    layout: "splitv",
+    overflow: "last",
+    subschema: {
+      layout: "splith",
+      overflow: "first",
+      subschema: {
+        layout: "splitv",
+        overflow: "first"
+      }
+    }
   }
 };
 
@@ -74,7 +90,7 @@ def do(commands):
       if $x.error then "\t\($x.error)" else empty end
     ),
     ipc::send_tick(""),
-    (ipc::get_tree | show::show)
+    (ipc::get_tree | show::show(""))
   end;
 
 def is_event(event; change):
@@ -115,38 +131,45 @@ def ensure_marks($orientation):
   mark(INSERT),
   mark(SWAP; $monocle);
 
-# Normalize a workspace or container into an n-overflow layout. This is a
+# Normalize a workspace or container into an n-capacity layout. This is a
 # subtler affair than it may at first appear, because, for a seamless
 # experience, we send all our commands to the window manager in a single IPC
 # message. Therefore, we cannot take the input layout tree at face value: some
 # containers may have vanished and others may have appeared. We make sure that,
 # at each step, we can access the container's id and the attributes of any
 # child that is not (and does not have any descendants of) a container that may
-# have already moved.
-def normalize($schema; $orig_schema; $leaves):
+# have already moved (i.e. a leader).
+def normalize($schema; $root_schema; $leaves):
   if .type != "con" then
     "Can only normalize containers." | error
   end |
 
-  (base + $schema) as {$forward, $capacity, $layout, $overflow} |
+  $schema as {$capacity, $layout, $overflow, $insert, $subschema} |
 
-  # Organize $leaves into $leaders and $followers, according to the
-  # schema's capacity and direction. $followers are those windows that are in
+  if $overflow == "last" then
+    true
+  elif $overflow == "first" then
+    false
+  else
+    "Unknown overflow value '\($overflow)'" | error
+  end as $forward |
+
+  # Organize $leaves into $leaders and $followers, according to the schema's
+  # capacity and overflow position. $followers are those windows that are in
   # the overflow and $leaders are those that are not.
   if $forward then
     [$leaves[:$capacity-1], $leaves[$capacity-1:]]
   else
-    [$leaves[-$capacity:], $leaves[:-$capacity]]
+    [$leaves[-$capacity+1:], $leaves[:-$capacity+1]]
   end as [$leaders, $followers] |
 
   # Determine the $overflow_node. This is either the first non-leaf child that
   # does not contain any $leaders (because we cannot risk it vanishing during
   # our processing), or otherwise an arbitrary $followers node (in which case
   # it will be used for creating a new split).
-  ( first(.nodes[] | select(
-      .layout != "none" and
-      all($leaders[]; .id as $id | tree::find(.id == $id) == null)))
-    // $followers[if $forward then 0 else -1 end]
+  ( first(.nodes[] | select(.layout != "none" and (
+      .id as $id | $leaders | all(tree::find(.id == $id) == null))))
+    // $followers[0]
   ) as $overflow_node |
 
   if $forward then
@@ -169,8 +192,16 @@ def normalize($schema; $orig_schema; $leaves):
   # then move all leaders and the $overflow_node (or vice versa) to this
   # container.
   if [.nodes[].id] != [$content[].id] then
-    "[con_id=\(.id)] mark --add \(TMP)",
-    ($content[] | "[con_id=\(.id)] move to mark \(TMP)"),
+    . as $self |
+    "[con_id=\(.id)] mark --add \(TMP)", (
+      $content |
+      if $self.layout == "none" then
+        reverse
+      end |
+      .[] |
+      select(.id != $self.id) |
+      "[con_id=\(.id)] move to mark \(TMP)"
+    ),
     "[con_id=\(.id)] unmark \(TMP)"
   else
     empty
@@ -178,7 +209,10 @@ def normalize($schema; $orig_schema; $leaves):
 
   # Finally, recursively apply the normalization step to the $overflow_node.
   ($overflow_node // empty |
-  normalize($schema + ($overflow // $orig_schema); $orig_schema; $followers));
+  normalize(
+    $schema | del(.subschema) + ($subschema // $root_schema);
+    $root_schema;
+    $followers));
 
 def normalize($schema):
   [tree::leaves] as $leaves |
@@ -189,7 +223,7 @@ def normalize($schema):
       empty
     end
   end |
-
+  (base + $schema) as $schema |
   normalize($schema; $schema; $leaves);
 
 def init:
