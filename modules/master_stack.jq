@@ -1,9 +1,9 @@
-# The n-overflow layout is a generalization of layouts such as master-stack and
+# The n-capacity layout is a generalization of layouts such as master-stack and
 # fibonacci. In it, a container follows a schema that tells it to accommodate
-# at most $n$ child leaves (growing either forward or backwards, and inserting
-# new windows either at the beginning or at the end) until the next one is
-# split and additional windows spill into this 'overflow container'. This
-# container, in turn, follows its own schema, and so on. 
+# at most $n$ child leaves (growing either forward or backward, and inserting
+# new windows either in front or in the back) until the next one is split and
+# additional windows spill into this 'overflow container'. This container, in
+# turn, follows its own schema, and so on. 
 #
 # A key consideration in the design of this approach to dynamic tiling is that
 # it must be seamless. That is, no assumptions must be made about the state of
@@ -12,32 +12,42 @@
 
 import "builtin/ipc" as ipc;
 import "builtin/tree" as tree;
+import "show" as show;
 
-def default: {
+def base: {
+  # The number of nodes at which an overflow split is created
   capacity: infinite,
-  size: 0.5,
+
+  # The proportion of space to be dedicated to each node
+  size: 1,
+
+  # Whether the layout should grow forward (ie the overflow node appears at the
+  # end) or backward
   forward: true,
-  layout: null,
-  overflow: null
+
+  # Whether new windows should be front-loaded or appear in the overflow node
+  insertion: "", # before focus / after focus / first / last
+
+  # The layout of this container
+  layout: "splith", # TODO: Determine from workspace
+
+  # The schema for the overflow node
+  overflow: {}
 };
 
 def master_stack: {
   capacity: 2,
-  size: 0.5,
   layout: "splith",
-  forward: false,
-  insertion: true,
-  overload: {
+  overflow: {
+    capacity: infinite,
     layout: "splitv"
   }
 };
 
 def fibonacci: {
   capacity: 2,
-  size: 0.5,
   layout: "splith",
-  forward: true,
-  overload: {
+  overflow: {
     layout: "splitv"
   }
 };
@@ -46,6 +56,7 @@ def fibonacci: {
 def INSERT: "insert";
 # The mark with which to swap new windows
 def SWAP: "swap";
+def TMP: "_swayq_overflow_moving";
 
 def do(commands):
   [commands] |
@@ -53,9 +64,17 @@ def do(commands):
   if . == [] then
     empty
   else
-    join("; ") |
-    { command: .,
-      result: ipc::run_command(.) }
+    join(";") |
+    (. | split(";")) as $cmd |
+    ipc::run_command(.) as $result |
+    (
+      range($cmd | length) |
+      $result[.] as $x |
+      "\(if $x.success then "\t" else "ERROR\t" end)\($cmd[.])",
+      if $x.error then "\t\($x.error)" else empty end
+    ),
+    ipc::send_tick(""),
+    (ipc::get_tree | show::show)
   end;
 
 def is_event(event; change):
@@ -104,22 +123,26 @@ def ensure_marks($orientation):
 # at each step, we can access the container's id and the attributes of any
 # child that is not (and does not have any descendants of) a container that may
 # have already moved.
-def normalize($schema):
-  normalize($schema, [tree::leaves]);
-def normalize($schema; $leaves):
-  (default + $schema) as {$forward, $capacity, $layout, $overflow} |
+def normalize($schema; $orig_schema; $leaves):
+  if .type != "con" then
+    "Can only normalize containers." | error
+  end |
+
+  (base + $schema) as {$forward, $capacity, $layout, $overflow} |
 
   # Organize $leaves into $leaders and $followers, according to the
   # schema's capacity and direction. $followers are those windows that are in
   # the overflow and $leaders are those that are not.
   if $forward then
-    [$leaves[:$capacity], $leaves[$capacity:]]
+    [$leaves[:$capacity-1], $leaves[$capacity-1:]]
   else
     [$leaves[-$capacity:], $leaves[:-$capacity]]
   end as [$leaders, $followers] |
 
   # Determine the $overflow_node. This is either the first non-leaf child that
-  # does not contain any $leaders, or otherwise the first of the $followers.
+  # does not contain any $leaders (because we cannot risk it vanishing during
+  # our processing), or otherwise an arbitrary $followers node (in which case
+  # it will be used for creating a new split).
   ( first(.nodes[] | select(
       .layout != "none" and
       all($leaders[]; .id as $id | tree::find(.id == $id) == null)))
@@ -133,9 +156,11 @@ def normalize($schema; $leaves):
   end as $content |
 
   # If the current container is a leaf, split it according to the schema.
-  if .layout != $layout then 
-    #TODO
+  if .layout == "none" then 
+    "[con_id=\(.id)] split toggle",
     "[con_id=\(.id)] layout \($layout)"
+  elif .layout != $layout then
+    "[con_id=\(.nodes[0].id)] layout \($layout)"
   else
     empty
   end,
@@ -144,19 +169,28 @@ def normalize($schema; $leaves):
   # then move all leaders and the $overflow_node (or vice versa) to this
   # container.
   if [.nodes[].id] != [$content[].id] then
-    "[con_id=\(.id)] mark --add _swayq_overflow_moving",
-    (
-      $content[] |
-      # TODO
-      "[con_id=\(.id)] move to mark _swayq_overflow_moving"
-    ),
-    "[con_id=\(.id)] unmark _swayq_overflow_moving"
+    "[con_id=\(.id)] mark --add \(TMP)",
+    ($content[] | "[con_id=\(.id)] move to mark \(TMP)"),
+    "[con_id=\(.id)] unmark \(TMP)"
   else
     empty
   end,
 
   # Finally, recursively apply the normalization step to the $overflow_node.
-  ($overflow_node // empty | normalize($overflow; $followers));
+  ($overflow_node // empty |
+  normalize($schema + ($overflow // $orig_schema); $orig_schema; $followers));
+
+def normalize($schema):
+  [tree::leaves] as $leaves |
+  if .type == "workspace" then
+    if .nodes != [] then
+      .nodes[0]
+    else
+      empty
+    end
+  end |
+
+  normalize($schema; $schema; $leaves);
 
 def init:
   # To instantly put new tiling windows where they belong, without a moment of 
@@ -166,10 +200,10 @@ def init:
   "for_window [tiling] move container to mark \(INSERT)",
   "for_window [tiling] swap container with mark \(SWAP)";
 
-def main:
+def main($initial_schema):
   do(init),
   foreach ipc::subscribe(["workspace", "window", "tick"]) as $e (
-    {stack: "left"};
+    $initial_schema;
     .;
     # if $e.event == "tick" then
     #   {stack: .stack, payload: $e.payload}
@@ -200,4 +234,4 @@ def main:
     end
   );
 
-main
+main(fibonacci)
