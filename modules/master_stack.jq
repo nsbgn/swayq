@@ -1,3 +1,5 @@
+# Seamless and easily configurable dynamic tiling in Sway/i3!
+#
 # The n-capacity layout is a generalization of layouts such as master-stack and
 # fibonacci. In it, a container follows a schema that tells it to accommodate
 # at most $n$ child leaves (growing either forward or backward, and inserting
@@ -5,10 +7,10 @@
 # additional windows spill into this 'overflow container'. This container, in
 # turn, follows its own schema, and so on. 
 #
-# A key consideration in the design of this approach to dynamic tiling is that
-# it must be seamless. That is, no assumptions must be made about the state of
-# the layout tree before the script takes effect, and there must be no moments
-# of flickering as the script responds to events and windows move into place.
+# A key consideration in the design is that it must be seamless. That is, no
+# assumptions must be made about the state of the layout tree before the script
+# takes effect, and we try to avoid moments of flickering as windows move into
+# place.
 
 import "builtin/ipc" as ipc;
 import "builtin/tree" as tree;
@@ -26,23 +28,25 @@ def base: {
   # container, or "first" and "last", relative to the current container.
   insert: "after",
 
-  # Which node should be the overflow container?
-  overflow: "last",
-  # Could later be an index number from 0 to $capacity (or -$capacity-1 to -1)
+  # At what position in the parent's container should this overflow be placed?
+  # Can be an index number from 0 to the parent's $capacity-1 (or -1 to
+  # -$capacity when counting from the end)
+  position: -1,
 
   # The layout of this container
   layout: "splith", # TODO: Determine from workspace
 
-  # The schema for the overflow node, if not the same as the root schema
-  subschema: null
+  # The schema for the child's overflow node, if not the same as the root
+  # schema.
+  # TODO: Multiple overflows may be given here, in order of priority.
+  overflow: null
 };
 
 def master_stack: {
   capacity: 2,
   layout: "splith",
   insert: "after",
-  overflow: "last",
-  subschema: {
+  overflow: {
     capacity: infinite,
     layout: "splitv",
     insert: "first"
@@ -51,18 +55,18 @@ def master_stack: {
 
 def fibonacci: {
   capacity: 2,
+  position: 0,
   layout: "splith",
   insert: "first",
-  overflow: "last",
-  subschema: {
+  overflow: {
+    position: -1,
     layout: "splitv",
-    overflow: "last",
-    subschema: {
+    overflow: {
+      position: -1,
       layout: "splith",
-      overflow: "first",
-      subschema: {
+      overflow: {
+        position: 0,
         layout: "splitv",
-        overflow: "first"
       }
     }
   }
@@ -90,7 +94,7 @@ def do(commands):
       if $x.error then "\t\($x.error)" else empty end
     ),
     ipc::send_tick(""),
-    (ipc::get_tree | show::show(""))
+    (ipc::get_tree | show::show)
   end;
 
 def is_event(event; change):
@@ -144,39 +148,31 @@ def normalize($schema; $root_schema; $leaves):
     "Can only normalize containers." | error
   end |
 
-  $schema as {$capacity, $layout, $overflow, $insert, $subschema} |
+  $schema as {$capacity, $layout, $insert, overflow: $subschema} |
+  ($schema | del(.overflow) + ($subschema // $root_schema)) as $subschema |
+  ($leaves | length) as $n |
 
-  if $overflow == "last" then
-    true
-  elif $overflow == "first" then
-    false
-  else
-    "Unknown overflow value '\($overflow)'" | error
-  end as $forward |
-
-  # Organize $leaves into $leaders and $followers, according to the schema's
-  # capacity and overflow position. $followers are those windows that are in
-  # the overflow and $leaders are those that are not.
-  if $forward then
-    [$leaves[:$capacity-1], $leaves[$capacity-1:]]
-  else
-    [$leaves[-$capacity+1:], $leaves[:-$capacity+1]]
-  end as [$leaders, $followers] |
+  # Partition $leaves into $before, $overflows, and $after.
+  ($subschema.position % $capacity |
+    if . < 0 then [. + $capacity, . + $n + 1]
+             else [., . + $n + 1 - $capacity]
+    end as $bounds |
+    $bounds[0] as $i |
+    ($bounds | max) as $j |
+    $leaves |
+    [.[:$i], .[$i:$j], .[$j:]]
+  ) as [$before, $overflows, $after] |
 
   # Determine the $overflow_node. This is either the first non-leaf child that
-  # does not contain any $leaders (because we cannot risk it vanishing during
-  # our processing), or otherwise an arbitrary $followers node (in which case
-  # it will be used for creating a new split).
+  # does not contain any leaf from this level (because we cannot risk it
+  # vanishing during our processing), or otherwise an arbitrary $overflow node
+  # (in which case it will be used for creating a new split).
   ( first(.nodes[] | select(.layout != "none" and (
-      .id as $id | $leaders | all(tree::find(.id == $id) == null))))
-    // $followers[0]
+      .id as $id | all($before[], $after[]; tree::find(.id == $id) == null))))
+    // $overflows[0]
   ) as $overflow_node |
 
-  if $forward then
-    $leaders + [$overflow_node // empty]
-  else
-    [$overflow_node // empty] + $leaders
-  end as $content |
+  ($before + [$overflow_node // empty] + $after) as $content |
 
   # If the current container is a leaf, split it according to the schema.
   if .layout == "none" then 
@@ -208,11 +204,7 @@ def normalize($schema; $root_schema; $leaves):
   end,
 
   # Finally, recursively apply the normalization step to the $overflow_node.
-  ($overflow_node // empty |
-  normalize(
-    $schema | del(.subschema) + ($subschema // $root_schema);
-    $root_schema;
-    $followers));
+  ($overflow_node // empty | normalize($subschema; $root_schema; $overflows));
 
 def normalize($schema):
   [tree::leaves] as $leaves |
