@@ -1,4 +1,4 @@
-# Seamless and easily configurable dynamic tiling in Sway/i3!
+# A module for seamless and easily configurable dynamic tiling in Sway/i3.
 #
 # The n-capacity layout is a generalization of layouts such as master-stack and
 # fibonacci. In it, a container follows a schema that tells it to accommodate
@@ -14,9 +14,8 @@
 
 import "builtin/ipc" as ipc;
 import "builtin/tree" as tree;
-import "show" as show;
 
-def base: {
+def schema_base: {
   # The number of nodes at which an overflow split is created
   capacity: infinite,
 
@@ -43,10 +42,10 @@ def base: {
   overflow: null
 };
 
-def master_stack: {
+def schema_master_stack: {
   capacity: 2,
   layout: "splith",
-  insert: "after",
+  insert: "last",
   overflow: {
     capacity: infinite,
     layout: "splitv",
@@ -54,7 +53,7 @@ def master_stack: {
   }
 };
 
-def fibonacci: {
+def schema_fibonacci: {
   capacity: 2,
   position: 0,
   layout: "splith",
@@ -76,11 +75,9 @@ def fibonacci: {
   }
 };
 
-# The mark to which to send new windows
-def INSERT: "insert";
-# The mark with which to swap new windows
-def SWAP: "swap";
-def TMP: "_swayq_overflow_moving";
+def INSERT: "insert"; # The mark to which to send new windows
+def SWAP: "swap"; # The mark with which to swap new windows
+def TMP: "tmp"; # Temporary mark
 
 def do(commands):
   [commands] |
@@ -91,19 +88,13 @@ def do(commands):
     join(";") |
     (. | split(";")) as $cmd |
     ipc::run_command(.) as $result |
-    (
-      range($cmd | length) |
+    ( range($cmd | length) |
       $result[.] as $x |
       "\(if $x.success then "\t" else "ERROR\t" end)\($cmd[.])",
       if $x.error then "\t\($x.error)" else empty end
     ),
-    ipc::send_tick(""),
-    (ipc::get_tree | show::show)
+    "* * *"
   end;
-
-def is_event(event; change):
-  (.event as $e | any(event; $e == .)) and
-  (.change as $c | any(change; $c == .));
 
 def mark($mark; $yes):
   if $yes then
@@ -115,29 +106,6 @@ def mark($mark; $yes):
   else
     "unmark \($mark)"
   end;
-def mark($mark):
-  mark($mark; true);
-
-def position:
-  if . == "top" or . == "left" then 0 # beginning
-  elif . == "bottom" or . == "right" then -1 # end
-  else "Unknown position '\(.)'" | error end;
-
-def axis:
-  if . == "left" or . == "right" then 0 # horizontal axis
-  elif . == "bottom" or . == "top" then 1 # vertical axis
-  else "Unknown axis '\(.)'" | error end;
-
-# Ensure that all marks are in the correct spot. We can assume that the layout
-# is correct here; if it isn't, it will be fixed later.
-def ensure_marks($orientation):
-  ($orientation | position) as $i |
-  (.nodes[0] // empty) |
-  (.nodes | length < 2) as $monocle |
-  (.nodes[$i] // empty) |
-  tree::focused |
-  mark(INSERT),
-  mark(SWAP; $monocle);
 
 # Normalize a workspace or container into an n-capacity layout. This is a
 # subtler affair than it may at first appear, because, for a seamless
@@ -148,9 +116,7 @@ def ensure_marks($orientation):
 # child that is not (and does not have any descendants of) a container that may
 # have already moved (i.e. a leader).
 def normalize($schema; $root_schema; $marked; $leaves):
-  if .type != "con" then
-    "Can only normalize containers." | error
-  end |
+  # if .type != "con" then "Can only normalize containers." | error end |
 
   $schema as {$capacity, $layout, $insert, overflow: $subschema} |
   ($schema | del(.overflow) + ($subschema // $root_schema)) as $subschema |
@@ -195,7 +161,7 @@ def normalize($schema; $root_schema; $marked; $leaves):
 
   if $to_be_marked != null then
     $to_be_marked |
-    mark(INSERT),
+    mark(INSERT; true),
     mark(SWAP; any("first", "before"; $insert == .))
   else
     empty
@@ -243,7 +209,7 @@ def normalize($schema):
       empty
     end
   end |
-  (base + $schema) as $schema |
+  (schema_base + $schema) as $schema |
   normalize($schema; $schema; false; $leaves);
 
 def init:
@@ -262,8 +228,9 @@ def main($initial_schema):
     # if $e.event == "tick" then
     #   {stack: .stack, payload: $e.payload}
     # end;
-    . as $schema | $e |
-    if is_event("window"; "new", "close", "focus") or is_event("workspace"; "focus") then
+    . as $schema |
+    if ($e.event == "window" and any("new", "close", "focus"; $e.change == .))
+        or ($e.event == "workspace" and $e.change == "focus") then
       do(
         ipc::get_tree |
         tree::focused(.type == "workspace") |
@@ -276,16 +243,13 @@ def main($initial_schema):
           normalize($schema)
         end
       )
-    elif is_event("window"; "focus") then
-      do(
-        ipc::get_tree |
-        tree::focused(.type == "workspace") |
-        empty
-        # ensure_marks($schema)
-      )
     else
       empty
     end
   );
 
-main(fibonacci)
+def fibonacci:
+  main(schema_fibonacci);
+
+def master_stack:
+  main(schema_master_stack);
