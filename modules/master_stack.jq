@@ -34,11 +34,12 @@ def base: {
   position: -1,
 
   # The layout of this container
-  layout: "splith", # TODO: Determine from workspace
+  # TODO: Determine from workspace
+  layout: "splith",
 
-  # The schema for the child's overflow node, if not the same as the root
-  # schema.
+  # The schema for the child's overflow node, if not the same as the root.
   # TODO: Multiple overflows may be given here, in order of priority.
+  # TODO: Make the inheritance explicit and allow finite overflows.
   overflow: null
 };
 
@@ -57,16 +58,19 @@ def fibonacci: {
   capacity: 2,
   position: 0,
   layout: "splith",
-  insert: "first",
+  insert: "after",
   overflow: {
     position: -1,
     layout: "splitv",
+    insert: "after",
     overflow: {
       position: -1,
       layout: "splith",
+      insert: "before",
       overflow: {
         position: 0,
         layout: "splitv",
+        insert: "before"
       }
     }
   }
@@ -143,7 +147,7 @@ def ensure_marks($orientation):
 # at each step, we can access the container's id and the attributes of any
 # child that is not (and does not have any descendants of) a container that may
 # have already moved (i.e. a leader).
-def normalize($schema; $root_schema; $leaves):
+def normalize($schema; $root_schema; $marked; $leaves):
   if .type != "con" then
     "Can only normalize containers." | error
   end |
@@ -173,6 +177,29 @@ def normalize($schema; $root_schema; $leaves):
   ) as $overflow_node |
 
   ($before + [$overflow_node // empty] + $after) as $content |
+
+  # Check if the insertion node can be found on this level; otherwise we will
+  # try our luck with the overflows later on. This is guaranteed to be a leaf.
+  if $marked then
+    null
+  else
+    if $insert == "first" then
+      $before[0]
+    elif $insert == "last" then
+      $after[-1]
+    else
+      ($before[], $after[] | select(.focused)) // null
+    end
+  end as $to_be_marked |
+  ($marked or $to_be_marked != null) as $marked |
+
+  if $to_be_marked != null then
+    $to_be_marked |
+    mark(INSERT),
+    mark(SWAP; any("first", "before"; $insert == .))
+  else
+    empty
+  end,
 
   # If the current container is a leaf, split it according to the schema.
   if .layout == "none" then 
@@ -204,7 +231,8 @@ def normalize($schema; $root_schema; $leaves):
   end,
 
   # Finally, recursively apply the normalization step to the $overflow_node.
-  ($overflow_node // empty | normalize($subschema; $root_schema; $overflows));
+  ($overflow_node // empty |
+  normalize($subschema; $root_schema; $marked; $overflows));
 
 def normalize($schema):
   [tree::leaves] as $leaves |
@@ -216,7 +244,7 @@ def normalize($schema):
     end
   end |
   (base + $schema) as $schema |
-  normalize($schema; $schema; $leaves);
+  normalize($schema; $schema; false; $leaves);
 
 def init:
   # To instantly put new tiling windows where they belong, without a moment of 
@@ -235,7 +263,7 @@ def main($initial_schema):
     #   {stack: .stack, payload: $e.payload}
     # end;
     . as $schema | $e |
-    if is_event("window"; "new", "close") or is_event("workspace"; "focus") then
+    if is_event("window"; "new", "close", "focus") or is_event("workspace"; "focus") then
       do(
         ipc::get_tree |
         tree::focused(.type == "workspace") |
