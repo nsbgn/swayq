@@ -58,4 +58,5 @@ def tiles:
 
 # All leaf nodes in the given container
 def leaves:
-  recurse(children);
+  recurse(.nodes[]) |
+  select(.type == "con" and .layout == "none");
