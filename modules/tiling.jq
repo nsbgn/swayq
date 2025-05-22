@@ -42,6 +42,23 @@ def schema_base: {
   overflow: null
 };
 
+def schema_overflow: {
+  capacity: 2,
+  layout: "splith",
+  insert: "first",
+  overflow: {
+    position: 0,
+    capacity: 3,
+    layout: "splitv",
+    insert: "first",
+    overflow: {
+      position: -1,
+      capacity: infinite,
+      layout: "tabbed"
+    }
+  }
+};
+
 def schema_master_stack: {
   capacity: 2,
   layout: "splith",
@@ -79,9 +96,7 @@ def INSERT: "insert"; # The mark to which to send new windows
 def SWAP: "swap"; # The mark with which to swap new windows
 def TMP: "tmp"; # Temporary mark
 
-def do(commands):
-  [commands] |
-  flatten |
+def do:
   if . == [] then
     empty
   else
@@ -221,7 +236,7 @@ def init:
   "for_window [tiling] swap container with mark \(SWAP)";
 
 def main($initial_schema):
-  do(init),
+  ([init] | do),
   foreach ipc::subscribe(["workspace", "window", "tick"]) as $e (
     $initial_schema;
     .;
@@ -231,8 +246,7 @@ def main($initial_schema):
     . as $schema |
     if ($e.event == "window" and any("new", "close", "focus"; $e.change == .))
         or ($e.event == "workspace" and $e.change == "focus") then
-      do(
-        ipc::get_tree |
+      [ ipc::get_tree |
         tree::focused(.type == "workspace") |
 
         # If the workspace is now entirely empty, we just need to make sure that any
@@ -242,7 +256,7 @@ def main($initial_schema):
         else
           normalize($schema)
         end
-      )
+      ] | do
     else
       empty
     end
@@ -253,3 +267,6 @@ def fibonacci:
 
 def master_stack:
   main(schema_master_stack);
+
+def overflow:
+  main(schema_overflow);
