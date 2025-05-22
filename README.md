@@ -3,33 +3,32 @@
 *This application is still rough around the edges and interfaces may 
 change without warning.*
 
-`i3q` allows you to programmatically control the window managers [i3] 
-and [Sway].
+Fast and concise scripting for [i3] and [Sway]! The `i3q` application 
+adds internal functions corresponding to i3's [IPC spec][ipc] on top of 
+[`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`.
 
-The application adds internal functions corresponding to i3's [IPC 
-spec][ipc] on top of [`gojq`][gojq], such as `ipc::subscribe` and 
-`ipc::run_command`. In the [`modules/`](./modules/) directory, you will 
-find filters to achieve some useful behaviour.
+The application comes [bundled](./modules/) with scripts to achieve some 
+useful behaviour, such as seamless and configurable dynamic tiling.
 
 ## Rationale
 
-To programmatically control the window manager [i3] or its younger 
-sibling [Sway], you might use a library like [go-i3] or [i3ipc]. The 
-library sends and receives some JSON on your behalf, translates it to a 
-native structure, and allows you to do your thing.
+To programmatically control your window manager, you might use a library 
+like [go-i3] or [i3ipc]. The library sends and receives some JSON on 
+your behalf, translates it to a native structure, and allows you to do 
+your thing.
 
 But why not use a language that is already tailor-made for JSON 
 transformations: [jq]? This allows you to closely follow i3's original 
 [commands][cmd] and [IPC spec][ipc]. You get the convenience of a script 
 while staying closer to the speed of a compiled program — and the result 
-is often much terser than either!
+is often less verbose than either!
 
 Much of this would also be achievable with a simple shell script that 
-ties together `jq`/`gojq` with `i3msg`/`swaymsg`. However, the `i3q` 
-binary offers some advantages, like the ability communicate with i3 at 
-any point during processing, which makes for more efficient and readable 
-scripts. Moreover, you will presumably run these commands quite often, 
-so a low footprint is desirable.
+ties together `jq`/`gojq`/`jaq` with `i3msg`/`swaymsg`. However, the 
+`i3q` binary offers some advantages, like the ability communicate with 
+the window manager at any point during processing, which makes for more 
+efficient and readable scripts. Finally, you will presumably run these 
+commands quite often, so a low footprint is desirable.
 
 ## Installation
 
@@ -65,7 +64,7 @@ context of the module.
 To run an `i3q` script within Sway or i3, add a line like this to your 
 configuration:
 
-    exec i3q master-stack
+    exec i3q tiling master_stack
 
 [i3]: https://i3wm.org/
 [ipc]: https://i3wm.org/docs/ipc.html
