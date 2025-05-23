@@ -38,7 +38,11 @@ commands quite often, so a low footprint is desirable.
 
 Make sure you have at least [Go][go] 1.21 installed. Then run:
 
+    go install codeberg.org/nsbg/i3jq@v0.1.3
+
+<!--
     go install codeberg.org/nsbg/swayq@latest
+-->
 
 
 ## Usage
