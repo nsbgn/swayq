@@ -1,4 +1,4 @@
-module codeberg.org/nsbg/i3jq
+module codeberg.org/nsbg/swayq
 
 go 1.21.0
 
