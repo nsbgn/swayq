@@ -3,12 +3,16 @@
 *This application is still rough around the edges and interfaces may 
 change without warning.*
 
-`swayq` provides fast and concise scripting for [i3] and [Sway]! The 
-tool internal functions corresponding to i3's [IPC spec][ipc] on top of 
-[`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`.
+`swayq` provides a fast and concise method to script [i3] and [Sway]. It 
+takes [`gojq`][gojq] and simply adds internal functions corresponding to 
+i3's [IPC spec][ipc], such as `ipc::subscribe` and `ipc::run_command`.
 
-It comes [bundled](./modules/) with scripts to achieve useful behaviour, 
-such as seamless and configurable dynamic tiling.
+The application also comes [bundled](./modules/) with some useful 
+scripts, such as:
+
+- Seamless and configurable dynamic tiling
+- Visualising the layout tree
+- Breaking out to the first free workspace
 
 ## Rationale
 
