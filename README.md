@@ -1,14 +1,14 @@
-# i3q / swayq
+# swayq
 
 *This application is still rough around the edges and interfaces may 
 change without warning.*
 
-Fast and concise scripting for [i3] and [Sway]! The `i3q` application 
-adds internal functions corresponding to i3's [IPC spec][ipc] on top of 
+`swayq` provides fast and concise scripting for [i3] and [Sway]! The 
+tool internal functions corresponding to i3's [IPC spec][ipc] on top of 
 [`gojq`][gojq], such as `ipc::subscribe` and `ipc::run_command`.
 
-The application comes [bundled](./modules/) with scripts to achieve some 
-useful behaviour, such as seamless and configurable dynamic tiling.
+It comes [bundled](./modules/) with scripts to achieve useful behaviour, 
+such as seamless and configurable dynamic tiling.
 
 ## Rationale
 
@@ -25,8 +25,8 @@ is often less verbose than either!
 
 Much of this would also be achievable with a simple shell script that 
 ties together `jq`/`gojq`/`jaq` with `i3msg`/`swaymsg`. However, the 
-`i3q` binary offers some advantages, like the ability communicate with 
-the window manager at any point during processing, which makes for more 
+binary offers some advantages, like the ability communicate with the 
+window manager at any point during processing, which makes for more 
 efficient and readable scripts. Finally, you will presumably run these 
 commands quite often, so a low footprint is desirable.
 
@@ -34,7 +34,7 @@ commands quite often, so a low footprint is desirable.
 
 Make sure you have at least [Go][go] 1.21 installed. Then run:
 
-    go install codeberg.org/nsbg/i3jq@latest
+    go install codeberg.org/nsbg/swayq@latest
 
 
 ## Usage
@@ -53,18 +53,18 @@ You can write a filter to execute a command:
 The first argument to the program is the module to load. This defaults 
 to [`show`](./builtin/show.jq), so that a formatted layout tree is 
 generated when no arguments are provided. Modules are searched for in 
-the current working directory, `~/.config/i3q`, `~/.jq` and 
-`$ORIGIN/../lib/jq`. Please view the files in [`builtin/`](./builtin/) 
-for detailed information on the builtin modules and the functions 
-defined within.
+the current working directory, `~/.config/swayq`, `~/.config/i3q`, 
+`~/.jq` and `$ORIGIN/../lib/jq`. Please view the files in 
+[`builtin/`](./builtin/) for detailed information on the builtin modules 
+and the functions defined within.
 
 The second optional argument is a jq filter which is executed within the 
 context of the module.
 
-To run an `i3q` script within Sway or i3, add a line like this to your 
+To run a `swayq` script within Sway or i3, add a line like this to your 
 configuration:
 
-    exec i3q tiling master_stack
+    exec swayq tiling master_stack
 
 [i3]: https://i3wm.org/
 [ipc]: https://i3wm.org/docs/ipc.html

@@ -12,11 +12,11 @@ import (
 	"github.com/itchyny/gojq"
 )
 
-type i3qModuleLoader struct {
+type swayqModuleLoader struct {
 	base *gojq.Query
 }
 
-func (l *i3qModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
+func (l *swayqModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	if l.base == nil {
 		return []*gojq.Query{}, nil
 	} else {
@@ -26,7 +26,7 @@ func (l *i3qModuleLoader) LoadInitModules() ([]*gojq.Query, error) {
 	}
 }
 
-func (l *i3qModuleLoader) LoadModule(name string) (*gojq.Query, error) {
+func (l *swayqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 	if strings.HasPrefix(name, "builtin/") {
 		builtin := LoadBuiltin(name[8:])
 		if builtin != nil {
@@ -88,6 +88,8 @@ func findModulePath(name string) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalln(err)
+	} else if path, found := findModuleAt(name, filepath.Join(home, ".config", "swayq")); found {
+		return path, nil
 	} else if path, found := findModuleAt(name, filepath.Join(home, ".config", "i3q")); found {
 		return path, nil
 	} else if path, found := findModuleAt(name, filepath.Join(home, ".jq")); found {

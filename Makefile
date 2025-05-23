@@ -4,27 +4,28 @@ REVISION=$(shell git rev-parse --short HEAD)
 LDFLAGS="-s -w -X 'main.Version=$(REVISION)'"
 
 BUILTIN_JQ = $(wildcard builtin/*.jq)
+BIN="swayq"
 
 .PHONY: all
 all: build
 
 .PHONY: build
-build: i3q
+build: swayq
 
 .PHONY: clean
 clean:
-	rm -rf i3q builtin.go
+	rm -rf ${BIN} builtin.go
 	go clean
 
 .PHONY: install
-install: i3q
+install: swayq
 	mkdir -p ${PREFIX}/bin/
-	install -m755 i3q ${PREFIX}/bin/
-	ln -sf ${PREFIX}/bin/i3q ${PREFIX}/bin/swayq
+	install -m755 ${BIN} ${PREFIX}/bin/
+	ln -sf ${PREFIX}/bin/${BIN} ${PREFIX}/bin/i3q
 
 .PHONY: uninstall
 uninstall:
-	rm -rf ${PREFIX}/bin/i3q ${PREFIX}/bin/swayq
+	rm -rf ${PREFIX}/bin/swayq ${PREFIX}/bin/i3q
 
 .PRECIOUS: builtin.go
 builtin.go: builtin.generator.go ${BUILTIN_JQ}
