@@ -17,15 +17,3 @@ def get_config: _internal(9; null; false);
 def send_tick($payload): _internal(10; $payload; false);
 def sync($payload): _internal(11; $payload; false);
 def get_binding_state($payload): _internal(12; $payload; false);
-
-# Shortcuts
-def do(commands):
-  [commands] |
-  flatten |
-  if . == [] then
-    empty
-  else
-    join("; ") |
-    { command: .
-    , result: run_command(.) }
-  end;
