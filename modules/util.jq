@@ -1,4 +1,7 @@
-module {name: "util"};
+module {
+  name: "util",
+  description: "Utility functions."
+};
 
 # Find the index of the first item satisfying the condition in an array
 def indexl(condition):
@@ -7,17 +10,6 @@ def indexl(condition):
 # Find the negative index of the last item satisfying the condition
 def indexr(condition):
   . as $x | first(range(length) | -1 - . | select($x[.] | condition)) // null;
-
-# Is a value among the given values? ie `2 | among(1, 2, 3) == true`
-def among(f):
-  first(. == f // empty) // false;
-
-# `some` is a helper for writing succinct predicates. It returns true if and
-# only if any of the values in the argument generator were true. Consider
-# `some(.layout == ("stacked", "tabbed"))` or `some(.marks[] == "m")`.
-# This is equivalent to `[generator] | any`, but more convenient.
-def some(generator):
-  first(generator | select(.) | true) // false;
 
 # Clamp a number to minimum and maximum values
 def clamp($min; $max):
