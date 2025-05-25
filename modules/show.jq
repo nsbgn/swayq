@@ -1,6 +1,6 @@
 module {
   name: "show",
-  description: "A module to show a readable tiling tree. This is the default module."
+  description: "A module to show a readable ASCII visualisation of the layout tree."
 };
 
 # cf. <https://en.wikipedia.org/wiki/Box_Drawing>
@@ -8,10 +8,6 @@ module {
 import "builtin/ipc" as ipc;
 import "builtin/tree" as tree;
 import "builtin/ansi" as ansi;
-
-def hex:
-  (. / 16 | floor | if . > 0 then hex else "" end)
-  + "0123456789abcdef"[. % 16];
 
 def pad($n):
   " " * ($n - length) + .;
