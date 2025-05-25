@@ -1,5 +1,5 @@
 module {
-  name: "show",
+  name: "viz",
   description: "A module to show a readable ASCII visualisation of the layout tree."
 };
 

@@ -59,7 +59,7 @@ You can write a filter to execute a command:
     .container.name // empty
 
 The first argument to the program is the module to load. This defaults 
-to [`show`](./builtin/show.jq), so that a formatted layout tree is 
+to [`viz`](./builtin/viz.jq), so that a formatted layout tree is 
 generated when no arguments are provided. Modules are searched for in 
 the current working directory, `~/.config/swayq`, `~/.config/i3q`, 
 `~/.jq` and `$ORIGIN/../lib/jq`. Please view the files in 
