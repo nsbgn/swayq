@@ -3,13 +3,17 @@ module {
   description: "Utility functions."
 };
 
+# The first index so that the corresponding array item satisfies the condition
+def indexc(condition; index_generator):
+  . as $arr | first(index_generator | select($arr[.] | condition)) // null;
+
 # Find the index of the first item satisfying the condition in an array
 def indexl(condition):
-  . as $x | first(range(length) | select($x[.] | condition)) // null;
+  indexc(condition; range(length));
 
 # Find the negative index of the last item satisfying the condition
 def indexr(condition):
-  . as $x | first(range(length) | -1 - . | select($x[.] | condition)) // null;
+  indexc(condition; range(length) | 1 - .);
 
 # Clamp a number to minimum and maximum values
 def clamp($min; $max):
