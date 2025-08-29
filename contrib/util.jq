@@ -4,16 +4,19 @@ module {
 };
 
 # The first index so that the corresponding array item satisfies the condition
-def indexc(condition; index_generator):
+def index_of(condition; index_generator):
   . as $arr | first(index_generator | select($arr[.] | condition)) // null;
+
+def index_of(condition):
+  index_of(condition; range(length));
 
 # Find the index of the first item satisfying the condition in an array
 def indexl(condition):
-  indexc(condition; range(length));
+  index_of(condition);
 
 # Find the negative index of the last item satisfying the condition
 def indexr(condition):
-  indexc(condition; range(length) | 1 - .);
+  index_of(condition; range(length) | 1 - .);
 
 # Clamp a number to minimum and maximum values
 def clamp($min; $max):

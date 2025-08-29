@@ -15,6 +15,7 @@
 
 import "builtin/ipc" as ipc;
 import "builtin/con" as tree;
+import "util" as util;
 
 def schema_base: {
   # The number of nodes at which an overflow split is created
@@ -65,26 +66,15 @@ def schema_overflow: {
 };
 
 def schema_master_stack: {
-  capacity: 2,
   layout: "splith",
-  insert: "last",
-  overflow: {
-    capacity: infinite,
-    layout: "splitv",
-    insert: "first"
-  }
+  nodes: [
+    { name: "master" },
+    { name: "stack",
+      capacity: infinite,
+      layout: "splitv"
+    }
+  ]
 };
-
-# def master_stack: {
-#   layout: "splith",
-#   nodes: [
-#     {},
-#     { capacity: infinite,
-#       priority: -1,
-#       layout: "splitv"
-#     }
-#   ]
-# };
 
 def schema_fibonacci: {
   capacity: 2,
@@ -138,14 +128,6 @@ def mark($mark; $yes):
     "unmark \($mark)"
   end;
 
-
-def defaults:
-  .size |= (. // 1) |
-  .layout |= (. // "splith") |
-  .reversed |= (.reversed // false) |
-  _calculate_capacity
-;
-
 def _calculate_capacity:
   if has("subschemas") then
     .subschemas[] |= _calculate_capacity |
@@ -160,23 +142,32 @@ def _calculate_capacity:
     .capacity = 1
   end;
 
+def defaults:
+  .size |= (. // 1) |
+  .layout |= (. // "splith") |
+  .reversed |= (.reversed // false) |
+  _calculate_capacity
+;
+
+def insert_after: "[con_id=\(.id)] mark --add \(INSERT)";
+def insert_before: insert_after,  "[con_id=\(.id)] mark --add \(SWAP)";
+
 # Assume a schema that has been assigned `.windows` and that has been
 # appropriately marked with `.insert`. Now generate commands for generating the
 # marks that will put the next future window in the correct spot.
+# We put marks to put it before or after a window with a capacity of one,
+# so the only time any reordering should take place is when we want to put
+# a window between two non-leaf containers. (minimizing the reordering even
+# in this case is a TODO)
 def _commands_insertion_marks:
-  if .subschemas == null then
-    if .reversed then
-      .windows[-1] | insert_after
-    else
-      .windows[0] | insert_before
-    end
-  else
+  if has("subschemas") then
     .subschemas |
     (util::index_of(.insert) // empty) as $target |
-    # If there is already something in the container, we handle it there
+    # If there is already something in the container, we handle it downstream
     if .[$target].occupancy > 0 then
       .[$target] | _commands_insertion_marks
-    # Otherwise
+    # But if it is still empty, we must put the insertion mark on one of the
+    # existing windows
     else
       .[util::index_of(.occupancy > 0; range($target; -1; -1))] as $before |
       .[util::index_of(.occupancy > 0; range($target; length))] as $after |
@@ -186,13 +177,19 @@ def _commands_insertion_marks:
          )
       then
         $after.windows[0] | insert_before
-      elif $before != null
+      elif $before != null then
         $before.windows[0] | insert_after
       else
-        "This cannot happen" | error
+        "unmark \(SWAP); unmark \(INSERT)"
       end
     end
-;
+  else
+    if .reversed then
+      .windows[-1] | insert_after
+    else
+      .windows[0] | insert_before
+    end
+  end;
 
 # Normalize a workspace or container into an n-capacity layout. This is a
 # subtler affair than it may at first appear, because, for a seamless
@@ -203,41 +200,36 @@ def _commands_insertion_marks:
 # and the attributes of any child that is not (and does not have any
 # descendants of) a container that may have already moved.
 def normalize($schema; $root_schema; $marked):
-  ($schema.windows // [tree::leaves] as $windows) |
+  ($schema.windows // [tree::leaves]) as $windows |
   . as $container |
 
-  # TODO: Handle inheriting schemas
-  #( $schema | del(.content) + ($subschema // $root_schema) ) as $subschema |
+  # First, we attach extra information to the subschemas (TODO if there are any)
+  if $schema.subschemas then 
+    $schema.subschemas |
 
-  # Assign each window to one of the subschemas, and also determine where
-  # the first upcoming window should go.
-  # - Assign a partition of $leaves to each container subschema, according to
-  # the priority, position and capacity of each subschema.
-  # - Determine for each subschema whether the next opened window should go
-  # there. We put marks to put it before or after a window with a capacity of
-  # one, so the only time any reordering should take place is when we want to
-  # put a window between two non-leaf containers. (minimizing the reordering
-  # even in this case is a TODO)
-  .subschemas |= (
-    # Remember the position of each item
+    # According to the priority, position and capacity of each subschema, we
+    # (1) assign a partition of windows and (2) determine whether any newly
+    # opened window should appear there.
+
+    # Remember the position of each subschema
     [foreach .[] as $sub (-1; . + 1; . as $p | $sub | .position = $p)] |
     # TODO: This should become a `group_by` so that we can spread leaves over
     # multiple containers if they have the same priority
-    sort_by(.priority)
+    sort_by(.priority | if .reversed then -. end)
     # Go over each child container in order of priority and remember how many
     # of the leaves they should accommodate
     [foreach .[] as $sub (
-      { remaining: $windows | length,
+      {
+        remaining: $windows | length,
         occupancy: 0,
         before_insert: true,
-        insert: false }
-      ;
-      # Also try breaking out later
+        insert: false 
+      };
+      # TODO break out later
       .occupancy = fmax(fmin(.remaining; $sub.capacity); 0) |
       .insert = (.before_insert and .occupancy < $sub.capacity) |
       .before_insert = (.before_insert and (.insert | not)) |
-      .remaining -= .occupancy
-      ;
+      .remaining -= .occupancy;
       . as {$occupancy, $insert} |
       $sub |
       .occupancy = $occupancy |
@@ -252,52 +244,62 @@ def normalize($schema; $root_schema; $marked):
       .j = .i + .occupancy |
       .windows = $windows[.i:.j];
       del(.i, .j, .position)
-    )]
-  ) |
+    )] |
 
-  # Each occupied subschema should have a 'representative'. This is a container
-  # that will hold all the windows assigned to that subschema. This can be a
-  # currently existing container, but if we can't find an appropriate one, not
-  # to worry: we can safely pick an arbitrary window, and it will be split into
-  # a container later. That is not ideal, because we want to minimize
-  # re-tiling.
-  foreach .subschemas[] | select(.occupancy > 0) as $sub (
-      []
-    ; # Update
+    # Each occupied subschema should have a 'representative'. This is a
+    # container that will hold all the windows assigned to that subschema.
+    # Ideally, this would be an existing container that already mostly
+    # corresponds to the schema, but if we can't find an appropriate one, not
+    # to worry: we can safely pick an arbitrary leaf container, as it will
+    # be split into a fresh container.
+    [foreach .[] as $sub (
+      # Init
+      [];
+      # Update
       . as $ids |
       . + [
-        if $sub.occupancy < 1 then
-          $sub
-        # Schemas with capacity 1 are always represented simply by the occupant
-        if $sub.capacity == 1 then
-          $sub.windows[0].id
-        # map each occupied container schema to an unused container on this
-        # level, or otherwise to an arbitrary leaf
-        else
-          first(
-            $container |
-            .nodes[] |
-            .id as $id |
-            # The representative container must not have been previously picked
-            select(.id | in($ids) | not) |
-            # And it must also have at least one of the assigned windows, so that
-            # we can be sure that the container still exists
-            select(tree::find(.id == $s.windows[0]))
-            # TODO Think about how to pick the container so as to need the
-            # smallest amount of Sway commands.
-            # You could make a mapping from windows to containers 
-            # You could, of course, map each window to a
-            # container that maximises the overlap between assigned windows and
-            # already contained windows (and minimizes the amount of windows that
-            # have to be moved out) but that seems like it would be a bit
-            # overkill. Better is to just guess where a new window would mess up
-            # the containers
-          ) // $sub.windows[0]
-        end
-      ; # extract
+      if $sub.occupancy < 1 then
+        empty
+      # Schemas with capacity 1 are always represented simply by the occupant
+      elif $sub.capacity == 1 then
+        $sub.windows[0]
+      # map each occupied container schema to an unused container on this
+      # level, or otherwise to an arbitrary leaf
+      else
+        first(
+          $container |
+          .nodes[] |
+          # The representative container must not have been previously picked
+          select(.id | in($ids) | not) |
+          # And it must also have at least one of the assigned windows, so that
+          # we can be sure that the container still exists
+          select(tree::find(.id == $sub.windows[0].id))
+          # TODO Think about how to pick the container so as to need the
+          # smallest number of Sway commands. You could find an optimal
+          # assignment by mapping each subschema to a container such that the
+          # overlap between assigned windows and already present windows is
+          # maximised. But that seems overkill --- it's better to just make
+          # an educated guess as to where a new window would mess things up.
+        ) // $sub.windows[0]
+      end | .id]
+      ;
+      # Extract
+      .[-1] as $new |
+      $sub |
+      .representative = $new
+    )]
+  else
+    null
+  end as $subschemas |
 
-    ]
-  ) |
+  # If the current container's children are not yet in the correct position,
+  # then move all leaders and the $overflow_node (or vice versa) to this
+  # container.
+  (if $subschemas then
+      [$subschemas[].representative]
+    else
+      [$schema.windows[]]
+  end) as $targets |
 
   # ---
   # From here on out, we generate actual commands!
@@ -307,25 +309,22 @@ def normalize($schema; $root_schema; $marked):
   # If the current container is a leaf, split it according to the schema.
   if .layout == "none" then 
     "[con_id=\(.id)] split toggle",
-    "[con_id=\(.id)] layout \($layout)"
-  elif .layout != $layout then
-    "[con_id=\(.nodes[0].id)] layout \($layout)"
+    "[con_id=\(.id)] layout \($schema.layout)"
+  elif .layout != $schema.layout then
+    "[con_id=\(.nodes[0].id)] layout \($schema.layout)"
   else
     empty
   end,
 
-  # If the current container's children are not yet in the correct position,
-  # then move all leaders and the $overflow_node (or vice versa) to this
-  # container.
-  if [.nodes[].id] != [$content[].id] then
-    . as $self |
+  # TODO be smarter about this
+  if [.nodes[].id] != [$targets[].id] then
     "[con_id=\(.id)] mark --add \(TMP)", (
-      $content |
-      if $self.layout == "none" then
+      $targets |
+      if $container.layout == "none" then
         reverse
       end |
       .[] |
-      select(.id != $self.id) |
+      select(.id != $container.id) |
       "[con_id=\(.id)] move to mark \(TMP)"
     ),
     "[con_id=\(.id)] unmark \(TMP)"
@@ -335,7 +334,8 @@ def normalize($schema; $root_schema; $marked):
 
   # Finally, recursively apply the normalization step to all subschemas.
   (
-    .subschemas[] |
+    $subschemas // empty |
+    .[] |
     . as $subschema |
     select(.occupancy > 0) |
     .representative |
@@ -372,19 +372,20 @@ def main($initial_schema):
     . as $schema |
     if ($e.event == "window" and any("new", "close", "focus"; $e.change == .))
         or ($e.event == "workspace" and $e.change == "focus") then
-      [ ipc::get_tree |
-        tree::find(.marks | any(. == INSERT)) as $insert |
-        tree::find(.marks | any(. == SWAP)) as $swap |
+      #[
+        ipc::get_tree |
+        # tree::find(.marks | any(. == INSERT)) as $insert |
+        # tree::find(.marks | any(. == SWAP)) as $swap |
         tree::focused(.type == "workspace") |
 
         # If the workspace is now entirely empty, we just need to make sure that any
         # new window opened won't appear in some other workspace.
-        if .nodes | length == 0 then
-          "unmark \(SWAP); unmark \(INSERT)"
-        else
+        # if .nodes | length == 0 then
+        #   "unmark \(SWAP); unmark \(INSERT)"
+        # else
           normalize($schema)
-        end
-      ] | do
+        # end
+      # ] | do
     else
       empty
     end
@@ -398,3 +399,5 @@ def master_stack:
 
 def overflow:
   main(schema_overflow);
+
+main(schema_master_stack)
