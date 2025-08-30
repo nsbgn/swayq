@@ -17,89 +17,6 @@ import "builtin/ipc" as ipc;
 import "builtin/tree" as tree;
 import "util" as util;
 
-def schema_base: {
-  # The number of nodes at which an overflow split is created
-  # This is `infinite`
-  # The number of nodes that can be accommodated by this container. This is
-  # usually calculated.
-  capacity: infinite,
-
-  # The proportion of space to be dedicated to this container compared to other
-  # containers.
-  size: 1,
-
-  # Where should new nodes be inserted if this container gets to choose?
-  # Possible values are "before" and "after", being relative to the focused
-  # container, or "first" and "last", relative to the current container.
-  #insert: "after",
-
-  # At what position in the parent's container should this overflow be placed?
-  # Can be an index number from 0 to the parent's $capacity-1 (or -1 to
-  # -$capacity when counting from the end)
-  #position: -1,
-
-  # The layout of this container
-  # TODO: Determine from workspace
-  layout: "splith",
-
-  # The schema for the child's overflow node, if not the same as the root.
-  # TODO: Multiple overflows may be given here, in order of priority.
-  # TODO: Make the inheritance explicit and allow finite overflows.
-  content: null
-};
-
-def schema_overflow: {
-  capacity: 2,
-  layout: "splith",
-  insert: "first",
-  overflow: {
-    position: 0,
-    capacity: 3,
-    layout: "splitv",
-    insert: "first",
-    overflow: {
-      position: -1,
-      capacity: infinite,
-      layout: "tabbed"
-    }
-  }
-};
-
-def schema_master_stack: {
-  layout: "splith",
-  nodes: [
-    { name: "master",
-      priority: 1},
-    { name: "stack",
-      capacity: infinite,
-      layout: "splitv",
-      priority: 2
-    }
-  ]
-};
-
-def schema_fibonacci: {
-  capacity: 2,
-  position: 0,
-  layout: "splith",
-  insert: "after",
-  overflow: {
-    position: -1,
-    layout: "splitv",
-    insert: "after",
-    overflow: {
-      position: -1,
-      layout: "splith",
-      insert: "before",
-      overflow: {
-        position: 0,
-        layout: "splitv",
-        insert: "before"
-      }
-    }
-  }
-};
-
 def INSERT: "insert"; # The mark to which to send new windows
 def SWAP: "swap"; # The mark with which to swap new windows
 def TMP: "tmp"; # Temporary mark
@@ -130,6 +47,9 @@ def mark($mark; $yes):
     "unmark \($mark)"
   end;
 
+def insert_after: mark(INSERT; true);
+def insert_before: insert_after, mark(SWAP; true);
+
 def _calculate_capacity:
   if has("subschemas") then
     .subschemas[] |= _calculate_capacity |
@@ -145,14 +65,31 @@ def _calculate_capacity:
   end;
 
 def defaults:
+  # The proportion of space to be dedicated to this container compared to other
+  # containers.
   .size |= (. // 1) |
-  .layout |= (. // "splith") |
-  .reversed |= (.reversed // false) |
-  _calculate_capacity
-;
 
-def insert_after: "[con_id=\(.id)] mark --add \(INSERT)";
-def insert_before: insert_after,  "[con_id=\(.id)] mark --add \(SWAP)";
+  # The layout of this container
+  # TODO: Determine from workspace
+  .layout |= (
+    . // "splith" |
+    . as $x |
+    if any("splith", "splitv", "tabbed", "stacked"; . == $x) |
+    not then
+    error
+    end) |
+
+  .priority |= (. // 0) |
+
+  # New nodes are usually added at the end. If this is set to true, they are
+  # added at the beginning.
+  .reversed |= (. // false) |
+
+  # The number of nodes that can be accommodated by this container.
+  _calculate_capacity
+
+  # The 
+;
 
 # Assume a schema that has been assigned `.windows` and that has been
 # appropriately marked with `.insert`. Now generate commands for generating the
@@ -174,11 +111,8 @@ def _commands_for_adding_insertion_marks($schema):
     else
       .[util::index_of(.occupancy > 0; range($target; -1; -1))] as $before |
       .[util::index_of(.occupancy > 0; range($target; length))] as $after |
-      if
-        ($after != null) and (
-         $before == null or ($before.capacity != 1 and $after.capacity == 1)
-         )
-      then
+      if ($after != null) and ($before == null or
+            ($before.capacity != 1 and $after.capacity == 1)) then
         $after.windows[0] | insert_before
       elif $before != null then
         $before.windows[0] | insert_after
@@ -293,7 +227,7 @@ def _subschemas_find_representative($container):
         $container |
         .nodes[] |
         # The representative container must not have been previously picked
-        select(.id | in($ids) | not) |
+        select(.id as $id | any($ids[]; . == $id) | not) |
         # And it must also have at least one of the assigned windows, so that
         # we can be sure that the container still exists
         select(tree::find(.id == $sub.windows[0].id))
@@ -390,13 +324,17 @@ def main($initial_schema):
     end
   );
 
-def fibonacci:
-  main(schema_fibonacci);
+def master_stack: main({
+  layout: "splith",
+  nodes: [
+    { name: "master",
+      priority: 1},
+    { name: "stack",
+      capacity: infinite,
+      layout: "splitv",
+      priority: 2
+    }
+  ]
+});
 
-def master_stack:
-  main(schema_master_stack);
-
-def overflow:
-  main(schema_overflow);
-
-main(schema_master_stack)
+master_stack
