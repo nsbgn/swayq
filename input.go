@@ -3,11 +3,14 @@ package main
 // Portions of this file were taken from <https://github.com/itchyny/gojq/blob/main/cli/inputs.go>
 
 import (
+	"bufio"
 	"bytes"
-	"errors"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
+	"strings"
+
 	"github.com/itchyny/gojq"
 )
 
@@ -61,6 +64,37 @@ func (i *jsonInputIter) Next() (any, bool) {
 }
 
 func (i *jsonInputIter) Close() error {
+	i.err = io.EOF
+	return nil
+}
+
+type rawInputIter struct {
+	r     *bufio.Reader
+	err   error
+}
+
+func newRawInputIter(r io.Reader) gojq.Iter {
+	return &rawInputIter{r: bufio.NewReader(r)}
+}
+
+func (i *rawInputIter) Next() (any, bool) {
+	if i.err != nil {
+		return nil, false
+	}
+	line, err := i.r.ReadString('\n')
+	if err != nil {
+		i.err = err
+		if err != io.EOF {
+			return err, true
+		}
+		if line == "" {
+			return nil, false
+		}
+	}
+	return strings.TrimSuffix(line, "\n"), true
+}
+
+func (i *rawInputIter) Close() error {
 	i.err = io.EOF
 	return nil
 }
