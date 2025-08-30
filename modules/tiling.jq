@@ -48,7 +48,7 @@ def mark($mark; $yes):
   end;
 
 def insert_after: mark(INSERT; true);
-def insert_before: insert_after, mark(SWAP; true);
+def insert_before: mark(INSERT; true), mark(SWAP; true);
 
 def _calculate_capacity:
   if has("subschemas") then
@@ -113,7 +113,7 @@ def _commands_for_adding_insertion_marks($schema):
       .[util::index_of(.occupancy > 0; range($target; length))] as $after |
       if ($after != null) and ($before == null or
             ($before.capacity != 1 and $after.capacity == 1)) then
-        $after.windows[0] | insert_before
+        $after.windows[-1] | insert_before
       elif $before != null then
         $before.windows[0] | insert_after
       else
@@ -122,9 +122,9 @@ def _commands_for_adding_insertion_marks($schema):
     end
   else
     if .reversed then
-      .windows[-1] | insert_after
-    else
       .windows[0] | insert_before
+    else
+      .windows[-1] | insert_after
     end
   end;
 
@@ -295,7 +295,9 @@ def init:
   # rules to insert new windows after the window with the `INSERT` mark. To put 
   # it *before* that window, also set the `SWAP` mark.
   "for_window [tiling] move container to mark \(INSERT)",
-  "for_window [tiling] swap container with mark \(SWAP)";
+  "for_window [tiling] swap container with mark \(SWAP)",
+  "unmark \(INSERT)",
+  "unmark \(SWAP)";
 
 def main($initial_schema):
   ([init] | do),
