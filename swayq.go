@@ -83,7 +83,7 @@ func main() {
 			gojq.WithEnvironLoader(os.Environ),
 			gojq.WithVariables([]string{"$ARGS"}),
 			gojq.WithInputIter(iter),
-			gojq.WithIterFunction("_internal", 3, 3, func(_ any, xs []any) gojq.Iter {
+			gojq.WithIterFunction("_ipc", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
 				if !ok0 {
 					return gojq.NewIter(errors.New("messageType param must be an int"))
