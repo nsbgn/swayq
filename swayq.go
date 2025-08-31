@@ -13,6 +13,7 @@ import (
 func main() {
 	var quietFlag = flag.Bool("q", false, "Do not print values")
 	var rawFlag = flag.Bool("r", true, "Print raw values")
+	var rawInputFlag = flag.Bool("R", true, "Read standard input as raw text lines")
 	var helpFlag = flag.Bool("h", false, "Show help")
 	flag.Parse()
 	var args = flag.Args()
@@ -69,12 +70,19 @@ func main() {
 	 	"positional": positional,
 	 }
 
+	var iter gojq.Iter
+	if *rawInputFlag {
+		iter = newRawInputIter(os.Stdin)
+	} else {
+		iter = newJSONInputIter(os.Stdin)
+	}
+
 	if query != nil {
 		code, err := gojq.Compile(query,
 			gojq.WithModuleLoader(&loader),
 			gojq.WithEnvironLoader(os.Environ),
 			gojq.WithVariables([]string{"$ARGS"}),
-			gojq.WithInputIter(newRawInputIter(os.Stdin)),
+			gojq.WithInputIter(iter),
 			gojq.WithIterFunction("_internal", 3, 3, func(_ any, xs []any) gojq.Iter {
 				messageType, ok0 := xs[0].(int)
 				if !ok0 {
