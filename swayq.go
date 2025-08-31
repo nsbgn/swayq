@@ -19,7 +19,7 @@ func main() {
 	var args = flag.Args()
 
 	if *helpFlag {
-		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION...] [MODULE] [QUERY] [ARGS...]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION...] [MODULE] [ARGS...]\n\n", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
@@ -34,34 +34,36 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	var query_file *gojq.Query
-	query_file = q
+	query := q
+	idx_args := 1
 
-	var query_arg *gojq.Query
-	if len(args) > 1 {
-		q, err := gojq.Parse(args[1])
-		if err != nil {
-			log.Fatalln(err)
+	// Check if the module sets a query (rather than only function
+	// definitions). If it does, we execute that query and treat all
+	// non-flag arguments as $ARGS. If it doesn't, then the first
+	// argument is our query and the rest of the arguments are our
+	// $ARGS.
+	if query.Term == nil && query.Left == nil {
+		if len(args) > 1 {
+			idx_args = idx_args + 1
+			q, err := gojq.Parse(args[1])
+			if err != nil {
+				log.Fatalln(err)
+			}
+			loader.base = query
+			query = q
+		} else {
+			log.Fatalln("no query provided")
 		}
-		query_arg = q
-	}
-
-	var query *gojq.Query
-	if query_arg != nil {
-		loader.base = query_file
-		query = query_arg
-	} else {
-		query = query_file
 	}
 
 	// Pass command-line arguments through
-	nargs := len(args) - 2
+	nargs := len(args) - idx_args
 	if (nargs < 0) {
 		nargs = 0
 	}
 	positional := make([]any, nargs)
 	if (nargs > 0) {
-		for i, arg := range args[2:] {
+		for i, arg := range args[idx_args:] {
 			positional[i] = arg
 		}
 	}
