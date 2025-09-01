@@ -1,0 +1,117 @@
+import "builtin/ipc" as ipc;
+import "builtin/tree" as tree;
+import "viz" as viz;
+import "workspace" as ws;
+
+def click_handler:
+  inputs |
+  sub("^,"; "") |
+  try (
+    fromjson |
+    if .name == "taskbar" then
+      ipc::run_command("[con_id=\(.instance)] focus")
+    else
+      ipc::run_command("exec notify-send \([to_entries[].key] | join("."))")
+    end
+  ) catch empty;
+
+# Gruvbox colors
+def black: "#000000";
+def dark: "#282828";
+def light: "#d4be98";
+def red: "#ea6962";
+def orange: "#e78a4e";
+def green: "#a9b665";
+def blue: "#7daea3";
+def purple: "#d3869b";
+def aqua: "#89b482";
+
+def colorscheme:
+  {
+    here_focus:  { color: dark, background: green, border: black },
+    here_idle:   { color: light, background: dark, border: green + "90" },
+    there_focus: { color: light, background: dark, border: green },
+    there_idle:  { color: light, background: dark, border: green + "90" },
+  };
+
+def icon:
+  "<span> " +
+  if .app_id == "org.mozilla.firefox" then
+    ""
+  elif .app_id == "org.qutebrowser.qutebrowser" then
+    ""
+  elif .app_id == "Alacritty" or (.app_id | startswith("foot")) then
+    ""
+  elif .app_id == "org.nicotine_plus.Nicotine" then
+    ""
+  elif .app_id == "signal" then
+    ""
+  elif .app_id == "" then
+    ""
+  else
+    ""
+  end + " </span>";
+
+def title:
+  .name | sub(" — Mozilla Firefox"; "")
+;
+
+def workspace($focused_ws):
+  . as $ws |
+  {
+    name: "workspace_separator",
+    full_text: " ",
+    align: "right",
+    separator: false,
+    separator_block_width: 0,
+    border: "#000000",
+    border_right: 3,
+    border_left: 3
+  },
+  (
+    tree::focused.id as $focused_win |
+    tree::leaves |
+    {
+      name: "taskbar",
+      instance: "\(.id)",
+      markup: "pango",
+      full_text: "\(icon) \(title | viz::truncate(20))",
+      separator_block_width: 0,
+    } + colorscheme["\(if $focused_ws then "here" else "there" end)_\(if .id ==
+    $focused_win then "focus" else "idle" end)"]
+  )
+;
+
+def taskbar:
+  tree::focused(.type == "output") |
+  .focus[0] as $focus |
+  .nodes[] |
+  workspace(.id == $focus)
+;
+
+def swaybar_protocol:
+  {
+    "version": 1,
+    "click_events": true
+  },
+  "[[],",
+  foreach exec_experimental(
+    ["swayq", "ipc", "subscribe([\"workspace\", \"window\", \"tick\"])"];
+    ["sh", "-c", "while :; do date +%Y-%m-%d\\ %H:%M; sleep 15; done"]
+    ) as $e (
+    [[], []];
+    if $e.channel == 1 then
+      .[1] = [{full_text: $e.text}]
+    else
+      .[0] = (ipc::get_tree | [ taskbar ])
+    end;
+    flatten |
+    tostring + ","
+  ),
+  "]";
+
+if $ARGS.positional[0] == "click_handler" then
+  click_handler
+else
+  swaybar_protocol
+end
