@@ -2,9 +2,49 @@ package main
 
 import (
 	"os"
+	"sync"
 	"errors"
+	"encoding/json"
 	"github.com/itchyny/gojq"
 )
+
+type channelIter struct {
+	ch *chan any
+	wg *sync.WaitGroup
+}
+
+func (iter channelIter) Next() (any, bool) {
+	obj, ok := <-*iter.ch
+	if !ok {
+		return errors.New("channel was closed"), false
+	}
+	return obj, true
+}
+
+// Process a query and send result to channel
+func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoader, inputIter gojq.Iter) {
+	defer iter.wg.Done()
+
+	query, err := gojq.Parse(queryStr)
+	if err != nil {
+		*iter.ch <- err
+		return
+	}
+	code, err := compile(query, loader, inputIter)
+	if err != nil {
+		*iter.ch <- err
+		return
+	}
+
+	runIter := code.Run(input, nil)
+	for {
+		val, ok := runIter.Next()
+		if !ok {
+			break
+		}
+		*iter.ch <- val
+	}
+}
 
 func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (*gojq.Code, error) {
 	return gojq.Compile(query,
@@ -14,6 +54,38 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (
 		gojq.WithInputIter(inputIter),
 		gojq.WithIterFunction("exec_experimental", 1, 30, funcExecMultiplex),
 		gojq.WithIterFunction("_ipc", 3, 3, funcIpc),
+		gojq.WithIterFunction("eval", 1, 30, func (x any, xs []any) gojq.Iter {
+			ch := make(chan any)
+			wg := sync.WaitGroup{}
+			iter := channelIter{&ch, &wg}
+			for _, query := range xs {
+				wg.Add(1)
+
+				// Parse argument as string
+				queryString, ok := query.(string)
+				if !ok {
+					return gojq.NewIter(errors.New("a filter to be evaluated must be a string"))
+				}
+
+				// Deep copy the input value
+				var xCopy any
+				xJson, err := json.Marshal(x)
+				if err != nil {
+					return gojq.NewIter(errors.New("error marshalling input"))
+				}
+				err = json.Unmarshal(xJson, &xCopy)
+				if err != nil {
+					return gojq.NewIter(errors.New("error unmarshalling input"))
+				}
+
+				go eval(&iter, queryString, xCopy, loader, inputIter)
+			}
+			go func(){
+				wg.Wait()
+				close(ch)
+			}()
+			return iter
+		}),
 	)
 }
 
