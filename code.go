@@ -4,6 +4,7 @@ import (
 	"os"
 	"fmt"
 	"sync"
+	"time"
 	"errors"
 	"encoding/json"
 	"github.com/itchyny/gojq"
@@ -55,6 +56,7 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (
 		gojq.WithInputIter(inputIter),
 		gojq.WithFunction("debug", 0, 0, funcDebug),
 		gojq.WithFunction("stderr", 0, 0, funcStderr),
+		gojq.WithIterFunction("sleep", 1, 1, funcSleep),
 		gojq.WithIterFunction("_ipc", 3, 3, funcIpc),
 		gojq.WithIterFunction("exec", 1, 1, funcExec),
 		gojq.WithIterFunction("eval", 1, 1, func (x any, xs []any) gojq.Iter {
@@ -138,4 +140,13 @@ func funcStderr(v any, _ []any) any { // FIXME
 		fmt.Fprint(os.Stderr, string(item))
 	}
 	return v
+}
+
+func funcSleep(v any, xs []any) gojq.Iter {
+	s, ok := xs[0].(int)
+	if !ok {
+		return gojq.NewIter(errors.New("sleep must have an integer argument"))
+	}
+	time.Sleep(time.Duration(s) * time.Second)
+	return gojq.NewIter()
 }
