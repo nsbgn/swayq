@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"fmt"
 	"sync"
 	"errors"
 	"encoding/json"
@@ -52,6 +53,8 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (
 		gojq.WithEnvironLoader(os.Environ),
 		gojq.WithVariables([]string{"$ARGS"}),
 		gojq.WithInputIter(inputIter),
+		gojq.WithFunction("debug", 0, 0, funcDebug),
+		gojq.WithFunction("stderr", 0, 0, funcStderr),
 		gojq.WithIterFunction("_ipc", 3, 3, funcIpc),
 		gojq.WithIterFunction("exec", 1, 1, funcExec),
 		gojq.WithIterFunction("eval", 1, 1, func (x any, xs []any) gojq.Iter {
@@ -119,4 +122,20 @@ func funcIpc(_ any, xs []any) gojq.Iter {
 	} else {
 		return iter
 	}
+}
+
+func funcDebug(v any, _ []any) any { // FIXME
+	debug, err := gojq.Marshal([]any{"DEBUG:", v})
+	if err == nil {
+		fmt.Fprintln(os.Stderr, string(debug))
+	}
+	return v
+}
+
+func funcStderr(v any, _ []any) any { // FIXME
+	item, err := gojq.Marshal(v)
+	if err == nil {
+		fmt.Fprint(os.Stderr, string(item))
+	}
+	return v
 }
