@@ -89,24 +89,37 @@ def taskbar:
   workspace(.id == $focus)
 ;
 
+
+def date:
+  now | strftime("%Y-%m-%d %H:%M") |
+  {full_text: .},
+  sleep(1),
+  date;
+
+def tasks:
+  ipc::subscribe(["workspace", "window", "tick"]) |
+  ipc::get_tree |
+  [ taskbar ];
+
 def swaybar_protocol:
   {
     "version": 1,
     "click_events": true
   },
   "[[],",
-  foreach exec_experimental(
-    ["swayq", "ipc", "subscribe([\"workspace\", \"window\", \"tick\"])"];
-    ["sh", "-c", "while :; do date +%Y-%m-%d\\ %H:%M; sleep 15; done"]
-    ) as $e (
-    [[], []];
-    if $e.channel == 1 then
-      .[1] = [{full_text: $e.text}]
-    else
-      .[0] = (ipc::get_tree | [ taskbar ])
-    end;
-    flatten |
-    tostring + ","
+  (
+    # Create filters
+    ["tasks", "date"] |
+    [ . as $args | range(length) | . as $i |
+      $args[.] | "\(.) | {channel: \($i), content: .}"] |
+
+    # Evaluate all filters in parallel
+    foreach eval(.) as $x (
+        [range(length) | []];
+        .[$x.channel] = $x.content;
+        flatten |
+        tostring + ","
+    )
   ),
   "]";
 
