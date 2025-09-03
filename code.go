@@ -52,8 +52,8 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (
 		gojq.WithEnvironLoader(os.Environ),
 		gojq.WithVariables([]string{"$ARGS"}),
 		gojq.WithInputIter(inputIter),
-		gojq.WithIterFunction("exec_experimental", 1, 30, funcExecMultiplex),
 		gojq.WithIterFunction("_ipc", 3, 3, funcIpc),
+		gojq.WithIterFunction("exec", 1, 1, funcExec),
 		gojq.WithIterFunction("eval", 1, 1, func (x any, xs []any) gojq.Iter {
 
 			xsArray, ok := xs[0].([]any)
