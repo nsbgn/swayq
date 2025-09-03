@@ -82,6 +82,17 @@ def workspace($focused_ws):
   )
 ;
 
+# Get process information for PIDs in the tree
+def process_info:
+  ipc::get_tree |
+  [...pid? // empty] |
+  unique |
+  ["ps", "e", (.[] | "--ppid", tostring), "-o", "ppid=,pid=,tpgid="] |
+  exec(.) |
+  capture("(?<ppid>[0-9]+)\\s+(?<pid>[0-9]+)\\s+(?<tpgid>[0-9]+)") |
+  [exec(["readlink", "-f", "/proc/\(.tpgid)/\("exe", "cwd")"])] as [$exe, $cwd] |
+  {pid: .pid | tonumber, $exe, $cwd};
+
 def taskbar:
   tree::focused(.type == "output") |
   .focus[0] as $focus |
@@ -101,6 +112,9 @@ def tasks:
   ipc::get_tree |
   [ taskbar ];
 
+if $ARGS.positional[0] == "tgrpid" then
+  process_info
+else
 # Generate strings in the form of the swaybar protocol
 {
   "version": 1,
@@ -123,3 +137,4 @@ def tasks:
   )
 ),
 "]"
+end
