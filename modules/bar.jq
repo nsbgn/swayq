@@ -91,9 +91,9 @@ def taskbar:
 
 
 def date:
-  now | strftime("%Y-%m-%d %H:%M") |
+  now | strflocaltime("%Y-%m-%d %H:%M") |
   {full_text: .},
-  sleep(1),
+  sleep(15),
   date;
 
 def tasks:
@@ -101,30 +101,25 @@ def tasks:
   ipc::get_tree |
   [ taskbar ];
 
-def swaybar_protocol:
-  {
-    "version": 1,
-    "click_events": true
-  },
-  "[[],",
-  (
-    # Create filters
-    ["tasks", "date"] |
-    [ . as $args | range(length) | . as $i |
-      $args[.] | "\(.) | {channel: \($i), content: .}"] |
+# Generate strings in the form of the swaybar protocol
+{
+  "version": 1,
+  "click_events": true
+},
+"[[],",
+(
+  # Create filters
+  ["click_handler", "tasks", "date"] |
+  [ . as $args | range(length) | . as $i |
+    $args[.] | "\(.) | {channel: \($i), content: .}"] |
 
-    # Evaluate all filters in parallel
-    foreach eval(.) as $x (
-        [range(length) | []];
-        .[$x.channel] = $x.content;
-        flatten |
-        tostring + ","
-    )
-  ),
-  "]";
-
-if $ARGS.positional[0] == "click_handler" then
-  click_handler
-else
-  swaybar_protocol
-end
+  # Evaluate all filters in parallel
+  foreach eval(.) as $x (
+      [range(length) | []];
+      .[$x.channel] = $x.content;
+      .[1:] |
+      flatten |
+      tostring + ","
+  )
+),
+"]"
