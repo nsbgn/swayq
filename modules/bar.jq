@@ -93,12 +93,6 @@ def process_info:
   [exec(["readlink", "-f", "/proc/\(.tpgid)/\("exe", "cwd")"])] as [$exe, $cwd] |
   {pid: .pid | tonumber, $exe, $cwd};
 
-def taskbar:
-  tree::focused(.type == "output") |
-  .focus[0] as $focus |
-  .nodes[] |
-  workspace(.id == $focus);
-
 def battery:
   {full_text: first(exec(["acpi", "-b"]))},
   sleep(100);
@@ -121,10 +115,18 @@ def date:
   sleep(15),
   date;
 
-def tasks:
+def tasks($monitor):
   ipc::subscribe(["workspace", "window", "tick"]) |
   ipc::get_tree |
-  [ taskbar ];
+  if $monitor != null then
+    .nodes[] | select(.name == $monitor)
+  else
+    tree::focused(.type == "output")
+  end |
+  .focus[0] as $focus |
+  .nodes[] |
+  [workspace(.id == $focus)];
+
 
 # Generate strings in the form of the swaybar protocol
 {
@@ -134,7 +136,7 @@ def tasks:
 "[[],",
 (
   # Create filters
-  ["click_handler", "tasks", "pulseaudio", "battery", "date"] |
+  ["click_handler", "tasks(\($ARGS.positional[0] | tojson))", "pulseaudio", "battery", "date"] |
   [ . as $args | range(length) | . as $i |
     $args[.] | "\(.) | {channel: \($i), content: .}"] |
 
