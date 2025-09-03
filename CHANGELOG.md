@@ -1,5 +1,38 @@
 # Changelog
 
+### Development
+
+-   (WIP) The `tiling` module was added for facilitating automatic 
+    custom dynamic tiling.
+-   (WIP) There is a `bar` module for creating a swaybar-compatible 
+    status command.
+-   (WIP) The `workspace` module was added, which can find the first 
+    free workspace and leaf through your workspaces plus the first free 
+    one.
+-   An `exec/1` internal function is provided that can execute an 
+    external process.
+-   An `eval/1` internal function is provided that can evaluate filters 
+    given as an array of strings. Crucially, these filters can be run in 
+    parallel.
+-   A `sleep/1` internal function is provided that does nothing
+-   The `debug` builtin has been enabled.
+-   The `stderr` builtin has been enabled.
+-   The `input{,s}` builtins have been enabled for reading from stdin.
+-   The `-R` flag toggles between raw and JSON input.
+-   Positional arguments are now available in the `$ARGS` variable, in 
+    the same format as stock `jq`.
+-   The default module can now be changed by creating a `default.jq` 
+    module.
+-   **Breaking:** The project has been renamed to `swayq`.
+-   **Breaking:** The `tree::leaves` builtin was fixed.
+-   **Breaking:** The `tree::focus*` builtins were renamed to 
+    `tree::focused*`.
+-   **Breaking:** Removed `ipc::do`, `extra::among`, `extra::some`, 
+    `show::hex`.
+-   **Breaking:** Renamed modules `extra`→`util` and `show`→`viz`.
+-   **Breaking:** You can now only set a filter if a module defines no 
+    filter of its own; otherwise extra arguments are read as `$ARGS`.
+
 ### 0.1.3 (2024-07-21)
 
 -   The `show` module has been added, for text-based visualizations of 
