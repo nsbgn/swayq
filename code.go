@@ -54,11 +54,17 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (
 		gojq.WithInputIter(inputIter),
 		gojq.WithIterFunction("exec_experimental", 1, 30, funcExecMultiplex),
 		gojq.WithIterFunction("_ipc", 3, 3, funcIpc),
-		gojq.WithIterFunction("eval", 1, 30, func (x any, xs []any) gojq.Iter {
+		gojq.WithIterFunction("eval", 1, 1, func (x any, xs []any) gojq.Iter {
+
+			xsArray, ok := xs[0].([]any)
+			if !ok {
+				return gojq.NewIter(errors.New("eval expects an array"))
+			}
+
 			ch := make(chan any)
 			wg := sync.WaitGroup{}
 			iter := channelIter{&ch, &wg}
-			for _, query := range xs {
+			for _, query := range xsArray {
 				wg.Add(1)
 
 				// Parse argument as string
