@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"flag"
-	"errors"
 	"github.com/itchyny/gojq"
 )
 
@@ -36,6 +35,7 @@ func main() {
 	}
 	query := q
 	idx_args := 1
+	loader.base = query
 
 	// Check if the module sets a query (rather than only function
 	// definitions). If it does, we execute that query and treat all
@@ -49,7 +49,6 @@ func main() {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			loader.base = query
 			query = q
 		} else {
 			log.Fatalln("no query provided")
@@ -72,46 +71,15 @@ func main() {
 	 	"positional": positional,
 	 }
 
-	var iter gojq.Iter
+	var inputIter gojq.Iter
 	if *rawInputFlag {
-		iter = newRawInputIter(os.Stdin)
+		inputIter = newRawInputIter(os.Stdin)
 	} else {
-		iter = newJSONInputIter(os.Stdin)
+		inputIter = newJSONInputIter(os.Stdin)
 	}
 
 	if query != nil {
-		code, err := gojq.Compile(query,
-			gojq.WithModuleLoader(&loader),
-			gojq.WithEnvironLoader(os.Environ),
-			gojq.WithVariables([]string{"$ARGS"}),
-			gojq.WithInputIter(iter),
-			gojq.WithIterFunction("exec_experimental", 1, 30, funcExecMultiplex),
-			gojq.WithIterFunction("_ipc", 3, 3, func(_ any, xs []any) gojq.Iter {
-				messageType, ok0 := xs[0].(int)
-				if !ok0 {
-					return gojq.NewIter(errors.New("messageType param must be an int"))
-				}
-
-				keepAlive, ok2 := xs[2].(bool)
-				if !ok2 {
-					return gojq.NewIter(errors.New("keepAlive param must be a bool"))
-				}
-
-				var payload *string = nil
-				if str, ok := xs[1].(string); ok {
-					payload = &str
-				} else if xs[1] != nil {
-					return gojq.NewIter(errors.New("payload param must be a string"))
-				}
-
-				iter, err := swayq_ipc(messageType, payload, keepAlive)
-				if err != nil {
-					return gojq.NewIter(err)
-				} else {
-					return iter
-				}
-			}),
-		)
+		code, err := compile(query, &loader, inputIter)
 		if err != nil {
 			log.Fatalln(err)
 		}
