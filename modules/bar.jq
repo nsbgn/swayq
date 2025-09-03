@@ -97,9 +97,23 @@ def taskbar:
   tree::focused(.type == "output") |
   .focus[0] as $focus |
   .nodes[] |
-  workspace(.id == $focus)
-;
+  workspace(.id == $focus);
 
+def battery:
+  {full_text: first(exec(["acpi", "-b"]))},
+  sleep(100);
+
+def volume($sink):
+  first(exec(["pactl", "get-sink-volume", $sink])) |
+  capture("(?<volume>[0-9]+%)") |
+  {full_text: .volume};
+
+def pulseaudio:
+  exec(["pactl", "get-default-sink"]) as $sink | # what if it changes
+  volume($sink),
+  (exec(["pactl", "subscribe"]) |
+  select(test("sink")) |
+  volume($sink));
 
 def date:
   now | strflocaltime("%Y-%m-%d %H:%M") |
@@ -112,9 +126,6 @@ def tasks:
   ipc::get_tree |
   [ taskbar ];
 
-if $ARGS.positional[0] == "tgrpid" then
-  process_info
-else
 # Generate strings in the form of the swaybar protocol
 {
   "version": 1,
@@ -123,7 +134,7 @@ else
 "[[],",
 (
   # Create filters
-  ["click_handler", "tasks", "date"] |
+  ["click_handler", "tasks", "pulseaudio", "battery", "date"] |
   [ . as $args | range(length) | . as $i |
     $args[.] | "\(.) | {channel: \($i), content: .}"] |
 
@@ -137,4 +148,3 @@ else
   )
 ),
 "]"
-end
