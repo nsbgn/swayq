@@ -1,6 +1,6 @@
 import "builtin/ipc" as ipc;
 import "builtin/con" as con;
-import "tree" as util;
+import "util" as util;
 import "workspace" as ws;
 
 def click_handler:

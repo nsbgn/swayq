@@ -23,3 +23,11 @@ def clip($min; $max):
 def wrap($i): $i % length;
 def clamp($i): length as $n | $i | clamp(0; $n - 1);
 def clip($i): length as $n | $i | clip(0; $n - 1);
+
+def pad($n):
+  " " * ($n - length) + .;
+
+def truncate($n):
+  if length > $n then
+    "\(.[0:$n / 2 | floor])…\(.[-($n / 2 | ceil) + 1:])"
+  end;

@@ -32,6 +32,8 @@
     `show::hex`.
 -   **Breaking:** Renamed modules `tree`→`con`, `show`→`tree`, and 
     `extra`→`util`.
+-   **Breaking:** Moved `truncate` and `pad` from the `tree` module 
+    (previously `show`) into `util`.
 -   **Breaking:** You can now only set a filter if a module defines no 
     filter of its own; otherwise extra arguments are read as `$ARGS`.
 

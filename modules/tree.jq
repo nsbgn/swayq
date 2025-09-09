@@ -9,14 +9,6 @@ import "builtin/ipc" as ipc;
 import "builtin/con" as con;
 import "builtin/ansi" as ansi;
 
-def pad($n):
-  " " * ($n - length) + .;
-
-def truncate($n):
-  if length > $n then
-    "\(.[0:$n / 2 | floor])…\(.[-($n / 2 | ceil) + 1:])"
-  end;
-
 def show(head; tail):
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
     (con::focused_child.id // null) as $focus_id |
@@ -64,7 +56,7 @@ def show:
       ""
     end | ansi::fg("gray") | ansi::underline | ansi::bold;
 
-  def head: .id | if . < 2147483646 then tostring else "·" end | pad(5) + " ";
+  def head: .id | if . < 2147483646 then tostring else "·" end | util::pad(5) + " ";
   def tail:
     "\(node_type)" +
     if .type == "root" or .type == "output" then
@@ -74,7 +66,7 @@ def show:
     elif .layout != "none" then
       ""
     else
-      "\(.app_id | truncate(16) | ansi::fg("gray")) \"\(.name | truncate(16) |
+      "\(.app_id | util::truncate(16) | ansi::fg("gray")) \"\(.name | util::truncate(16) |
       ansi::italic)\""
     end +
     if .marks != [] then
