@@ -94,13 +94,13 @@ def process_info:
   {pid: .pid | tonumber, $exe, $cwd};
 
 def battery:
-  {full_text: first(exec(["acpi", "-b"]))},
+  [{full_text: first(exec(["acpi", "-b"]))}],
   sleep(100);
 
 def volume($sink):
   first(exec(["pactl", "get-sink-volume", $sink])) |
   capture("(?<volume>[0-9]+%)") |
-  {full_text: .volume};
+  [{full_text: .volume}];
 
 def pulseaudio:
   exec(["pactl", "get-default-sink"]) as $sink | # what if it changes
@@ -111,21 +111,23 @@ def pulseaudio:
 
 def date:
   now | strflocaltime("%Y-%m-%d %H:%M") |
-  {full_text: .},
+  [{full_text: .}],
   sleep(15),
   date;
 
 def tasks($monitor):
   ipc::subscribe(["workspace", "window", "tick"]) |
   ipc::get_tree |
-  if $monitor != null then
-    .nodes[] | select(.name == $monitor)
-  else
-    tree::focused(.type == "output")
-  end |
-  .focus[0] as $focus |
-  .nodes[] |
-  [workspace(.id == $focus)];
+  [
+    if $monitor != null then
+      .nodes[] | select(.name == $monitor)
+    else
+      tree::focused(.type == "output")
+    end |
+    .focus[0] as $focus |
+    .nodes[] |
+    workspace(.id == $focus)
+  ];
 
 
 # Generate strings in the form of the swaybar protocol
