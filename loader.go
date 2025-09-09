@@ -32,7 +32,7 @@ func (l *swayqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 		if builtin != nil {
 			return builtin, nil
 		} else {
-			return nil, errors.New(fmt.Sprintf("No builtin named %v", name[5:]))
+			return nil, errors.New(fmt.Sprintf("No builtin named %v", name[8:]))
 		}
 	}
 
