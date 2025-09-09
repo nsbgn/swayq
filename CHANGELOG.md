@@ -21,8 +21,9 @@
 -   The `-R` flag toggles between raw and JSON input.
 -   Positional arguments are now available in the `$ARGS` variable, in 
     the same format as stock `jq`.
--   The default module can now be changed by creating a `default.jq` 
-    module.
+-   **Breaking:** You must now always provide a module. Running `swayq` 
+    on its own gives an error message and will eventually list available 
+    modules.
 -   **Breaking:** The project has been renamed to `swayq`.
 -   **Breaking:** The `con::leaves` builtin was fixed.
 -   **Breaking:** The `con::focus*` builtins were renamed to 

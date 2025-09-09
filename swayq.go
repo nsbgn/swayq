@@ -22,18 +22,18 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
+	if len(args) == 0 {
+		fmt.Println("Please provide a module.")
+		os.Exit(0)
+	}
 
 	loader := swayqModuleLoader{}
 
-	var query_path = "default"
-	if len(args) > 0 {
-		query_path = args[0]
-	}
-	q, err := loader.LoadModule(query_path)
+	var query *gojq.Query
+	query, err := loader.LoadModule(args[0])
 	if err != nil {
 		log.Fatalln(err)
 	}
-	query := q
 	idx_args := 1
 	loader.base = query
 
