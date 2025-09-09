@@ -1,6 +1,6 @@
 import "builtin/ipc" as ipc;
 import "builtin/con" as con;
-import "viz" as viz;
+import "tree" as util;
 import "workspace" as ws;
 
 def click_handler:
@@ -75,7 +75,7 @@ def workspace($focused_ws):
       name: "taskbar",
       instance: "\(.id)",
       markup: "pango",
-      full_text: "\(icon) \(title | viz::truncate(20))",
+      full_text: "\(icon) \(title | util::truncate(20))",
       separator_block_width: 0,
     } + colorscheme["\(if $focused_ws then "here" else "there" end)_\(if .id ==
     $focused_win then "focus" else "idle" end)"]
