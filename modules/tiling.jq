@@ -13,7 +13,7 @@
 # place.
 
 import "builtin/ipc" as ipc;
-import "builtin/tree" as tree;
+import "builtin/con" as tree;
 
 def schema_base: {
   # The number of nodes at which an overflow split is created

@@ -1,5 +1,5 @@
 import "builtin/ipc" as ipc;
-import "builtin/tree" as tree;
+import "builtin/con" as con;
 import "viz" as viz;
 import "workspace" as ws;
 
@@ -69,8 +69,8 @@ def workspace($focused_ws):
     border_left: 3
   },
   (
-    tree::focused.id as $focused_win |
-    tree::leaves |
+    con::focused.id as $focused_win |
+    con::leaves |
     {
       name: "taskbar",
       instance: "\(.id)",
@@ -122,7 +122,7 @@ def tasks($monitor):
     if $monitor != null then
       .nodes[] | select(.name == $monitor)
     else
-      tree::focused(.type == "output")
+      con::focused(.type == "output")
     end |
     .focus[0] as $focus |
     .nodes[] |

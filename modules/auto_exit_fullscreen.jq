@@ -2,12 +2,12 @@
 # Inspired by <https://old.reddit.com/r/swaywm/comments/vclww6/exit_fullscreen_when_new_window_opens/>
 
 import "builtin/ipc" as ipc;
-import "builtin/tree" as tree;
+import "builtin/con" as con;
 
 ipc::subscribe(["window"]) |
 if .change == "new" then
   ipc::get_tree |
-  tree::focused |
+  con::focused |
   if .fullscreen_mode then
     ipc::run_command("[con_id=\(.id)] fullscreen disable")
   end

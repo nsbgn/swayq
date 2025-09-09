@@ -1,6 +1,6 @@
 module {
-  name: "tree",
-  description: "Filters for navigating the layout tree."
+  name: "con",
+  description: "Filters for traversing containers in the layout tree."
 };
 
 # All direct child nodes, both tiled and floating

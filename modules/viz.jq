@@ -6,7 +6,7 @@ module {
 # cf. <https://en.wikipedia.org/wiki/Box_Drawing>
 
 import "builtin/ipc" as ipc;
-import "builtin/tree" as tree;
+import "builtin/con" as con;
 import "builtin/ansi" as ansi;
 
 def pad($n):
@@ -19,7 +19,7 @@ def truncate($n):
 
 def show(head; tail):
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
-    (tree::focused_child.id // null) as $focus_id |
+    (con::focused_child.id // null) as $focus_id |
     (.floating_nodes[-1] // .nodes[-1]).id as $last_id |
     ("\($prefix)\($prefix_parent)" | ansi::fg("gray")) as $pfx |
     "\(head)\($pfx)\(tail // "")",

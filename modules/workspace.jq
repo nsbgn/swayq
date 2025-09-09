@@ -6,7 +6,6 @@ module {
 # Previous solutions: <https://www.reddit.com/r/swaywm/comments/qo9uxr/always_having_an_empty_workspace/>
 
 import "builtin/ipc" as ipc;
-import "builtin/tree" as tree;
 
 # Find the index of the first item satisfying the condition in an array
 def indexl(condition):

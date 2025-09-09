@@ -29,7 +29,8 @@
     `tree::focused*`.
 -   **Breaking:** Removed `ipc::do`, `extra::among`, `extra::some`, 
     `show::hex`.
--   **Breaking:** Renamed modules `extra`→`util` and `show`→`viz`.
+-   **Breaking:** Renamed modules `tree`→`con`, `extra`→`util` and 
+    `show`→`viz`.
 -   **Breaking:** You can now only set a filter if a module defines no 
     filter of its own; otherwise extra arguments are read as `$ARGS`.
 

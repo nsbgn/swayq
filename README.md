@@ -50,7 +50,7 @@ Make sure you have at least [Go][go] 1.21 installed. Then run:
 You can write a filter to execute a command:
 
     ipc::get_tree |
-    tree::find(.app_id == "X") |
+    con::find(.app_id == "X") |
     ipc::run_command("[con_id=\(.id)] mark X")'
 
 ... or to listen to events:
