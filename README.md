@@ -58,16 +58,18 @@ You can write a filter to execute a command:
     ipc::subscribe(["window"]) |
     .container.name // empty
 
-The first argument to the program is the module to load. This defaults 
-to [`tree`](./builtin/tree.jq), so that a formatted layout tree is 
-generated when no arguments are provided. Modules are searched for in 
-the current working directory, `~/.config/swayq`, `~/.config/i3q`, 
-`~/.jq` and `$ORIGIN/../lib/jq`. Please view the files in 
-[`builtin/`](./builtin/) for detailed information on the builtin modules 
-and the functions defined within.
+The first argument to the program is the module to load. If none is 
+provided, an overview of available modules is shown.
 
-The second optional argument is a jq filter which is executed within the 
-context of the module.
+Modules are searched for in the current working directory, 
+`~/.config/swayq`, `~/.config/i3q`, `~/.jq` and `$ORIGIN/../lib/jq`. 
+Please view the files in [`builtin/`](./builtin/) for detailed 
+information on the builtin modules and the functions defined within.
+
+If the module is a library, that is, if it only defines functions but no 
+filter, then the second argument is a filter which is executed within 
+the context of the module. In any case, all remaining arguments are 
+available as `$ARGS` within the module.
 
 To run a `swayq` script within Sway or i3, add a line like this to your 
 configuration:

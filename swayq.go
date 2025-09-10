@@ -22,12 +22,35 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
+
+	loader := swayqModuleLoader{}
+
 	if len(args) == 0 {
-		fmt.Println("Please provide a module.")
+		modules, err := listModules()
+		if err != nil {
+			log.Fatalln(err)
+			os.Exit(1)
+		}
+
+		fmt.Println("Available modules:")
+		for _, module := range modules {
+			q, err := loader.LoadModule(module.name)
+			if err != nil {
+				continue
+			}
+
+			fmt.Print("\u001b[1m", module.name, "\u001b[0m")
+			if q.Meta != nil {
+				descrAny := q.Meta.ToValue()["description"]
+				if descrStr, ok := descrAny.(string); ok {
+					fmt.Print("\n    ", descrStr)
+				}
+			}
+			fmt.Println()
+		}
 		os.Exit(0)
 	}
 
-	loader := swayqModuleLoader{}
 
 	var query *gojq.Query
 	query, err := loader.LoadModule(args[0])

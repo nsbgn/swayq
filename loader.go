@@ -9,6 +9,7 @@ import (
 	"log"
 	"fmt"
 	"errors"
+	"io/ioutil"
 	"github.com/itchyny/gojq"
 )
 
@@ -112,4 +113,44 @@ func findModulePath(name string) (string, error) {
 	return "", errors.New(msg)
 }
 
+type moduleLoc struct {
+	name string
+	location string
+}
 
+func listModules() ([]moduleLoc, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	paths := make([]string, 3)
+	paths[0] = cwd
+	paths[1] = filepath.Join(home, ".config", "swayq")
+	paths[2] = filepath.Join(home, ".config", "i3q")
+
+	var modules []moduleLoc
+	for _, path := range paths {
+		files, err := ioutil.ReadDir(path)
+		if err != nil {
+			continue
+		}
+		for _, file := range files {
+			name := file.Name()
+			ext := filepath.Ext(name)
+			if file.IsDir() || ext != ".jq" {
+				continue
+			}
+			modules = append(modules, moduleLoc{
+				strings.TrimSuffix(name, ext),
+				filepath.Join(path, name),
+			})
+		}
+	}
+	return modules, nil
+}

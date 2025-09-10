@@ -19,6 +19,9 @@
 -   The `stderr` builtin has been enabled.
 -   The `input{,s}` builtins have been enabled for reading from stdin.
 -   The `-R` flag toggles between raw and JSON input.
+-   There is no longer a default module loaded. Instead, running `swayq` 
+    without arguments will produce an overview of available modules. For 
+    now, only non-builtin modules are shown.
 -   Positional arguments are now available in the `$ARGS` variable, in 
     the same format as stock `jq`.
 -   **Breaking:** You must now always provide a module. Running `swayq` 
