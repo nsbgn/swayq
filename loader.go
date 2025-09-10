@@ -152,5 +152,18 @@ func listModules() ([]moduleLoc, error) {
 			})
 		}
 	}
+
+	builtins := listBuiltins()
+	for _, builtin := range builtins {
+		for _, b := range modules {
+			if b.name == builtin {
+				continue
+			}
+		}
+		modules = append(modules, moduleLoc{
+			builtin,
+			filepath.Join("builtin/", builtin),
+		})
+	}
 	return modules, nil
 }

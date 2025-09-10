@@ -86,6 +86,23 @@ func LoadBuiltin(name string) *gojq.Query {
 		return nil
 	}
 }`)
+
+	out.WriteString("\n\nfunc listBuiltins() []string {\n\treturn []string{\n")
+
+	err = filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
+		if info != nil && !info.IsDir() && strings.HasSuffix(path, ".jq") {
+			rel, err := filepath.Rel(inputDir, path)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			out.WriteString("\t\t\"")
+			out.WriteString(rel[:len(rel)-3])
+			out.WriteString("\",\n")
+		}
+		return nil
+	})
+	out.WriteString("\t}\n}")
+
 }
 
 func formatQuery(q *gojq.Query) (*string, error) {

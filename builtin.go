@@ -16,3 +16,11 @@ func LoadBuiltin(name string) *gojq.Query {
 		return nil
 	}
 }
+
+func listBuiltins() []string {
+	return []string{
+		"ansi",
+		"con",
+		"ipc",
+	}
+}
