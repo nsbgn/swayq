@@ -77,35 +77,20 @@ func findModulePath(name string) (string, error) {
 		name = name + ".jq"
 	}
 
-	// Check current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln(err)
-	} else if path, found := findModuleAt(name, cwd); found {
-		return path, nil
-	}
-
-	// Check the home directory config files
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalln(err)
-	} else if path, found := findModuleAt(name, filepath.Join(home, ".config", "swayq")); found {
-		return path, nil
-	} else if path, found := findModuleAt(name, filepath.Join(home, ".config", "i3q")); found {
+	}
+
+	config_dir := os.Getenv("XDG_CONFIG_HOME")
+	if config_dir == "" {
+		config_dir = filepath.Join(home, ".config")
+	}
+	config_dir = filepath.Join(config_dir, "swayq")
+
+	if path, found := findModuleAt(name, config_dir); found {
 		return path, nil
 	} else if path, found := findModuleAt(name, filepath.Join(home, ".jq")); found {
-		return path, nil
-	} 
-
-	// Check the executable's directory
-	exe, err := os.Executable()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	exe, err = filepath.EvalSymlinks(exe)
-	if err != nil {
-		log.Fatalln(err)
-	} else if path, found := findModuleAt(name, filepath.Join(filepath.Dir(exe), "..", "lib", "jq")); found {
 		return path, nil
 	}
 
@@ -119,38 +104,31 @@ type moduleLoc struct {
 }
 
 func listModules() ([]moduleLoc, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
+	config_dir := os.Getenv("XDG_CONFIG_HOME")
+	if config_dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		config_dir = filepath.Join(home, ".config")
 	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-
-	paths := make([]string, 3)
-	paths[0] = cwd
-	paths[1] = filepath.Join(home, ".config", "swayq")
-	paths[2] = filepath.Join(home, ".config", "i3q")
+	config_dir = filepath.Join(config_dir, "swayq")
 
 	var modules []moduleLoc
-	for _, path := range paths {
-		files, err := ioutil.ReadDir(path)
-		if err != nil {
+	files, err := ioutil.ReadDir(config_dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		name := file.Name()
+		ext := filepath.Ext(name)
+		if file.IsDir() || ext != ".jq" {
 			continue
 		}
-		for _, file := range files {
-			name := file.Name()
-			ext := filepath.Ext(name)
-			if file.IsDir() || ext != ".jq" {
-				continue
-			}
-			modules = append(modules, moduleLoc{
-				strings.TrimSuffix(name, ext),
-				filepath.Join(path, name),
-			})
-		}
+		modules = append(modules, moduleLoc{
+			strings.TrimSuffix(name, ext),
+			filepath.Join(config_dir, name),
+		})
 	}
 
 	builtins := listBuiltins()

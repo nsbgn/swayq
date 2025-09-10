@@ -28,6 +28,8 @@
     on its own gives an error message and will eventually list available 
     modules.
 -   **Breaking:** The project has been renamed to `swayq`.
+-   **Breaking:** Modules are now only found in `$XDG_CONFIG_DIR/swayq` 
+    and in `$HOME/.jq`, not anywhere else. 
 -   **Breaking:** The `con::leaves` builtin was fixed.
 -   **Breaking:** The `con::focus*` builtins were renamed to 
     `con::focused*`.
