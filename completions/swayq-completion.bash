@@ -1,8 +1,8 @@
 #/usr/bin/env bash
 # Crude bash completion script. Only does filenames for now.
 
-_files() {
-  find ${HOME}/.config/swayq/ ${HOME}/.config/i3q/ -iname '*.jq' -maxdepth 1 -printf '%P\n' 2>/dev/null | sed 's/\.jq$//'
+_modules() {
+  swayq -l
 }
 
 _swayq_completions() {
@@ -10,7 +10,7 @@ _swayq_completions() {
     return
   fi
 
-  local suggestions=($(compgen -W "$(_files)" -- "${COMP_WORDS[1]}"))
+  local suggestions=($(compgen -W "$(_modules)" -- "${COMP_WORDS[1]}"))
 
   COMPREPLY=("${suggestions[@]}")
 }
