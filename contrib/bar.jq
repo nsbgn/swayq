@@ -82,20 +82,10 @@ def workspace($focused_ws):
   )
 ;
 
-# Get process information for PIDs in the tree
-def process_info:
-  ipc::get_tree |
-  [...pid? // empty] |
-  unique |
-  ["ps", "e", (.[] | "--ppid", tostring), "-o", "ppid=,pid=,tpgid="] |
-  exec(.) |
-  capture("(?<ppid>[0-9]+)\\s+(?<pid>[0-9]+)\\s+(?<tpgid>[0-9]+)") |
-  [exec(["readlink", "-f", "/proc/\(.tpgid)/\("exe", "cwd")"])] as [$exe, $cwd] |
-  {pid: .pid | tonumber, $exe, $cwd};
-
 def battery:
   [{full_text: first(exec(["acpi", "-b"]))}],
-  sleep(100);
+  sleep(100),
+  battery;
 
 def volume($sink):
   first(exec(["pactl", "get-sink-volume", $sink])) |
