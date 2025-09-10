@@ -8,6 +8,7 @@ module {
 import "builtin/ipc" as ipc;
 import "builtin/con" as con;
 import "builtin/ansi" as ansi;
+import "util" as util;
 
 def show(head; tail):
   def show_aux($prefix; $prefix_child; $prefix_parent; $on_focus_path):
