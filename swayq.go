@@ -13,7 +13,6 @@ func main() {
 	var quietFlag = flag.Bool("q", false, "Do not print values")
 	var rawFlag = flag.Bool("r", true, "Print raw values")
 	var rawInputFlag = flag.Bool("R", true, "Read standard input as raw text lines")
-	var listFlag = flag.Bool("l", false, "List all available swayq modules")
 	var helpFlag = flag.Bool("h", false, "Show help")
 	flag.Parse()
 	var args = flag.Args()
@@ -25,15 +24,16 @@ func main() {
 	}
 
 	loader := swayqModuleLoader{}
+	completions := os.Getenv("SWAYQ_COMPLETIONS") != ""
 
-	if len(args) == 0 || *listFlag {
+	if len(args) == 0 || completions {
 		modules, err := listModules()
 		if err != nil {
 			log.Fatalln(err)
 			os.Exit(1)
 		}
 
-		if *listFlag {
+		if completions {
 			for _, module := range modules {
 				fmt.Println(module.name)
 			}
