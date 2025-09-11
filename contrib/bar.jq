@@ -2,6 +2,7 @@ import "builtin/ipc" as ipc;
 import "builtin/con" as con;
 import "util" as util;
 import "workspace" as ws;
+import "icon" as icon;
 
 def click_handler:
   inputs |
@@ -34,23 +35,7 @@ def colorscheme:
     there_idle:  { color: light, background: dark, border: green + "90" },
   };
 
-def icon:
-  "<span> " +
-  if .app_id == "org.mozilla.firefox" then
-    ""
-  elif .app_id == "org.qutebrowser.qutebrowser" then
-    ""
-  elif .app_id == "Alacritty" or (.app_id | startswith("foot")) then
-    ""
-  elif .app_id == "org.nicotine_plus.Nicotine" then
-    ""
-  elif .app_id == "signal" then
-    ""
-  elif .app_id == "" then
-    ""
-  else
-    ""
-  end + " </span>";
+
 
 def title:
   .name | sub(" — Mozilla Firefox"; "")
@@ -75,7 +60,7 @@ def workspace($focused_ws):
       name: "taskbar",
       instance: "\(.id)",
       markup: "pango",
-      full_text: "\(icon) \(title | util::truncate(20))",
+      full_text: "\(icon::icon) \(title | util::truncate(20))",
       separator_block_width: 0,
     } + colorscheme["\(if $focused_ws then "here" else "there" end)_\(if .id ==
     $focused_win then "focus" else "idle" end)"]
