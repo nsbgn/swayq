@@ -12,6 +12,8 @@ def click_handler:
     fromjson |
     if .name == "taskbar" then
       ipc::run_command("[con_id=\(.instance)] focus")
+    elif .name == "workspace" then
+      ipc::run_command("workspace \(.instance)")
     else
       ipc::run_command("exec notify-send \([to_entries[].key] | join("."))")
     end
@@ -22,6 +24,7 @@ def title:
 ;
 
 def workspace($is_focus_ws):
+  . as $ws |
   {
     name: "workspace",
     instance: "\(.num)",
@@ -52,7 +55,8 @@ def workspace($is_focus_ws):
         {fg: "#888888", bg: "#000000"}
       end as {$fg, $bg} |
       {
-        name: "taskbar",
+        name: "workspace",
+        instance: "\($ws.num)",
         full_text: "…",
         separator: false,
         separator_block_width: 0,
@@ -141,10 +145,19 @@ def tasks($monitor):
     end |
     (
       .focus[0] as $focus |
-      .nodes[] |
+      .nodes[],
+      # Also put one empty workspace if none are empty now.
+      if .nodes | any(.focus == []) then
+        empty
+      else
+        .nodes |
+        first(ws::free) |
+        {num: ., nodes: [], floating_nodes: []}
+      end |
       workspace(.id == $focus)
     ),
-    {full_text: " "}
+    # This shouldn't be necessary, but there's weird padding
+    {full_text: "  "}
   ];
 
 
