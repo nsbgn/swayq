@@ -3,6 +3,7 @@ import "builtin/con" as con;
 import "util" as util;
 import "workspace" as ws;
 import "icon" as icon;
+import "color" as color;
 
 def click_handler:
   inputs |
@@ -16,66 +17,124 @@ def click_handler:
     end
   ) catch empty;
 
-# Gruvbox colors
-def black: "#000000";
-def dark: "#282828";
-def light: "#d4be98";
-def red: "#ea6962";
-def orange: "#e78a4e";
-def green: "#a9b665";
-def blue: "#7daea3";
-def purple: "#d3869b";
-def aqua: "#89b482";
-
-def colorscheme:
-  {
-    here_focus:  { color: dark, background: green, border: black },
-    here_idle:   { color: light, background: dark, border: green + "90" },
-    there_focus: { color: light, background: dark, border: green },
-    there_idle:  { color: light, background: dark, border: green + "90" },
-  };
-
-
-
 def title:
   .name | sub(" — Mozilla Firefox"; "")
 ;
 
-def workspace($focused_ws):
-  . as $ws |
+def workspace($is_focus_ws):
   {
-    name: "workspace_separator",
-    full_text: " ",
-    align: "right",
+    name: "workspace",
+    instance: "\(.num)",
+    full_text: "\(.num | if . > 0 and . <= 10 then [if $is_focus_ws then 10101 else 9311 end + .] | implode else . end)",
+    min_width: 30,
+    align: "center",
     separator: false,
     separator_block_width: 0,
-    border: "#000000",
-    border_right: 3,
-    border_left: 3
+    color: "#cccccc",
+    background: "#000000",
+    border_top: 0,
+    border_left: 0,
+    border_bottom: 0,
+    border_right: 0
   },
   (
-    con::focused.id as $focused_win |
-    con::leaves |
-    {
-      name: "taskbar",
-      instance: "\(.id)",
-      markup: "pango",
-      full_text: "\(icon::icon) \(title | util::truncate(20))",
-      separator_block_width: 0,
-    } + colorscheme["\(if $focused_ws then "here" else "there" end)_\(if .id ==
-    $focused_win then "focus" else "idle" end)"]
+    if $is_focus_ws then
+      "#cccccc"
+    else
+      "#666666"
+    end as $border |
+    con::focused.id as $focus_id |
+    [con::leaves] |
+    if . == [] then
+      if $is_focus_ws then
+        {fg: "#dddddd", bg: "#555555" }
+      else
+        {fg: "#888888", bg: "#000000"}
+      end as {$fg, $bg} |
+      {
+        name: "taskbar",
+        full_text: "…",
+        separator: false,
+        separator_block_width: 0,
+        color: $fg,
+        background: $bg,
+        border: $border
+      }
+    else
+      .[0].first = true |
+      .[-1].last = true |
+      .[] |
+      (.id == $focus_id) as $is_focus_win |
+
+      if $is_focus_win and $is_focus_ws then
+        {fg: "#dddddd", bg: "#555555" }
+      elif $is_focus_win then
+        {fg: "#aaaaaa", bg: "#333333"}
+      else
+        {fg: "#888888", bg: "#000000"}
+      end as {$fg, $bg} |
+      {
+        name: "taskbar_icon",
+        instance: "\(.id)",
+        full_text: "<span size=\"xx-large\"> \(icon::icon) </span>",
+        min_width: 20,
+        markup: "pango",
+        align: "center",
+        separator: false,
+        separator_block_width: 0,
+        color: $fg,
+        background: $bg,
+        border: $border,
+        border_top: 1,
+        border_left: if .first? then 1 else 0 end,
+        border_bottom: 1,
+        border_right: 0
+      },
+      {
+        name: "taskbar",
+        instance: "\(.id)",
+        full_text: " \(title | util::truncate(20)) ",
+        separator: false,
+        separator_block_width: 0,
+        color: $fg,
+        background: $bg,
+        border: $border,
+        border_top: 1,
+        border_left: 0,
+        border_bottom: 1,
+        border_right: 1
+      }
+    end
   )
 ;
 
 def battery:
-  [{full_text: first(exec(["acpi", "-b"]))}],
+  [ exec(["acpi", "-b"]) |
+    capture("(?<state>(Not charging|Charging|Discharging)), (?<charge>[0-9]+)%") |
+    if .state == "Not charging" then
+      "\uf1e6"
+    elif .state == "Charging" then
+      "\uf0e7"
+    else
+      .charge | tonumber |
+      if   . > 75 then 0
+      elif . > 65 then 1
+      elif . > 50 then 2
+      elif . > 30 then 3
+      else 4 end |
+      [62016 + .] |
+      implode
+    end as $icon |
+    {full_text: "\($icon) \(.charge)"}
+    
+  ],
   sleep(100),
   battery;
 
 def volume($sink):
   first(exec(["pactl", "get-sink-volume", $sink])) |
-  capture("(?<volume>[0-9]+%)") |
-  [{full_text: .volume}];
+  capture("(?<volume>[0-9]+)%") |
+  [{full_text: "\uf028 \(.volume)"}];
 
 def pulseaudio:
   exec(["pactl", "get-default-sink"]) as $sink | # what if it changes
@@ -99,9 +158,12 @@ def tasks($monitor):
     else
       con::focused(.type == "output")
     end |
-    .focus[0] as $focus |
-    .nodes[] |
-    workspace(.id == $focus)
+    (
+      .focus[0] as $focus |
+      .nodes[] |
+      workspace(.id == $focus)
+    ),
+    {full_text: " "}
   ];
 
 
