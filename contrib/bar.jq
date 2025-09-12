@@ -39,7 +39,7 @@ def workspace($is_focus_ws):
   },
   (
     if $is_focus_ws then
-      "#cccccc"
+      "#dddddd"
     else
       "#666666"
     end as $border |
@@ -62,10 +62,8 @@ def workspace($is_focus_ws):
       }
     else
       .[0].first = true |
-      .[-1].last = true |
       .[] |
       (.id == $focus_id) as $is_focus_win |
-
       if $is_focus_win and $is_focus_ws then
         {fg: "#dddddd", bg: "#555555" }
       elif $is_focus_win then
@@ -74,12 +72,9 @@ def workspace($is_focus_ws):
         {fg: "#888888", bg: "#000000"}
       end as {$fg, $bg} |
       {
-        name: "taskbar_icon",
+        name: "taskbar",
         instance: "\(.id)",
-        full_text: "<span size=\"xx-large\"> \(icon::icon) </span>",
-        min_width: 20,
-        markup: "pango",
-        align: "center",
+        full_text: " \(icon::icon)  \(title | util::truncate(20))",
         separator: false,
         separator_block_width: 0,
         color: $fg,
@@ -87,20 +82,6 @@ def workspace($is_focus_ws):
         border: $border,
         border_top: 1,
         border_left: if .first? then 1 else 0 end,
-        border_bottom: 1,
-        border_right: 0
-      },
-      {
-        name: "taskbar",
-        instance: "\(.id)",
-        full_text: " \(title | util::truncate(20)) ",
-        separator: false,
-        separator_block_width: 0,
-        color: $fg,
-        background: $bg,
-        border: $border,
-        border_top: 1,
-        border_left: 0,
         border_bottom: 1,
         border_right: 1
       }
