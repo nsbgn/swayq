@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"flag"
+	"strings"
 	"github.com/itchyny/gojq"
 )
 
@@ -65,7 +66,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	idx_args := 1
 	loader.base = query
 
 	// Check if the module sets a query (rather than only function
@@ -73,6 +73,7 @@ func main() {
 	// non-flag arguments as $ARGS. If it doesn't, then the first
 	// argument is our query and the rest of the arguments are our
 	// $ARGS.
+	idx_args := 1
 	if query.Term == nil && query.Left == nil {
 		if len(args) > 1 {
 			idx_args = idx_args + 1
@@ -86,20 +87,43 @@ func main() {
 		}
 	}
 
-	// Pass command-line arguments through
-	nargs := len(args) - idx_args
-	if (nargs < 0) {
-		nargs = 0
-	}
-	positional := make([]any, nargs)
-	if (nargs > 0) {
-		for i, arg := range args[idx_args:] {
-			positional[i] = arg
+	// Pass command-line arguments through. This is a simplistic solution:
+	// kwargs will lose ordering information, all short-form arguments are 
+	// simple flags, and only long-form arguments can be given a string value
+	// with `=`. Repeating arguments has no effect at the moment (though this
+	// could be changed). If this simplicity ever does lead to problems, we
+	// might consider an option in the module metadata to turn off named
+	// argument parsing, and let the user handle it instead.
+	kwargs := make(map[string]any)
+	nargs := make([]any, 0)
+	doubledash := false
+	for _, arg := range args[idx_args:] {
+		if !doubledash && arg[0] == '-' {
+			if len(arg) == 1 {
+				continue
+			} else if arg == "--" {
+				doubledash = true
+			} else {
+				if arg[1] == '-' {
+					j := strings.IndexByte(arg, '=')
+					if j > 0 {
+						kwargs[arg[2:j]] = []any{arg[j+1:]}
+					} else {
+						kwargs[arg[2:]] = []any{""}
+					}
+				} else {
+					for _, char := range arg[1:] {
+						kwargs[string(char)] = 1
+					}
+				}
+			}
+		} else {
+			nargs = append(nargs, arg)
 		}
 	}
 	varArgs := map[string]any{
-	 	"named": map[string]any{},
-	 	"positional": positional,
+	 	"named": kwargs,
+	 	"positional": nargs,
 	 }
 
 	var inputIter gojq.Iter

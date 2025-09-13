@@ -23,7 +23,8 @@
     without arguments will produce an overview of available modules.
 -   Rudimentary shell completions.
 -   Positional arguments are now available in the `$ARGS` variable, in 
-    the same format as stock `jq`.
+    the same format as stock `jq`. Named arguments are also parsed and 
+    passed through.
 -   **Breaking:** You must now always provide a module. Running `swayq` 
     on its own gives an error message and will eventually list available 
     modules.
