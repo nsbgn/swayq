@@ -10,12 +10,20 @@ def click_handler:
   sub("^,"; "") |
   try (
     fromjson |
-    if .name == "taskbar" then
+    if .name == "taskbar" and .button == 1 then
       ipc::run_command("[con_id=\(.instance)] focus")
-    elif .name == "workspace" then
+    elif .name == "workspace" and .button == 1 then
       ipc::run_command("workspace \(.instance)")
+    elif .name == "pulseaudio" then
+      if .button == 1 then
+        ipc::run_command("exec pactl set-sink-mute @DEFAULT_SINK@ toggle")
+      elif .button == 4 then
+        ipc::run_command("exec pactl set-sink-volume @DEFAULT_SINK@ +2%")
+      elif .button == 5 then
+        ipc::run_command("exec pactl set-sink-volume @DEFAULT_SINK@ -2%")
+      end
     else
-      ipc::run_command("exec notify-send \([to_entries[].key] | join("."))")
+      ipc::run_command("exec notify-send \(.button)")
     end
   ) catch empty;
 
@@ -116,17 +124,32 @@ def battery:
   sleep(100),
   battery;
 
-def volume($sink):
-  first(exec(["pactl", "get-sink-volume", $sink])) |
+def mute:
+  first(exec(["pactl", "get-sink-mute", "@DEFAULT_SINK@"])) |
+  capture("Mute: (?<mute>(yes|no))") |
+  (.mute == "yes");
+
+def volume:
+  first(exec(["pactl", "get-sink-volume", "@DEFAULT_SINK@"])) |
   capture("(?<volume>[0-9]+)%") |
-  [{full_text: "\uf028 \(.volume)"}];
+  .volume |
+  tonumber;
+
+def pulseaudio_once:
+  volume |
+  if mute then "\uf6a9"
+  elif . < 5 then "\uf026"
+  elif . < 50 then "\uf027"
+  else "\uf028"
+  end as $icon |
+  [{full_text: "\($icon) \(.)", name: "pulseaudio"}];
 
 def pulseaudio:
-  exec(["pactl", "get-default-sink"]) as $sink | # what if it changes
-  volume($sink),
-  (exec(["pactl", "subscribe"]) |
-  select(test("sink")) |
-  volume($sink));
+  pulseaudio_once,
+  ( exec(["pactl", "subscribe"]) |
+    select(test("sink")) |
+    pulseaudio_once
+  );
 
 def date:
   now | strflocaltime("%Y-%m-%d %H:%M") |
