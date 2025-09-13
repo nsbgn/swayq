@@ -36,66 +36,56 @@ def workspace($is_focus_ws):
   {
     name: "workspace",
     instance: "\(.num)",
-    full_text: "\(.num | if . > 0 and . <= 10 then [if $is_focus_ws then 10101 else 9311 end + .] | implode else . end)",
-    min_width: 30,
-    align: "center",
+    full_text: " <small>\(.num):</small>",
+    markup: "pango",
     separator: false,
     separator_block_width: 0,
-    color: "#cccccc",
+    color: "#888888",
     background: "#000000",
-    border_top: 0,
-    border_left: 0,
-    border_bottom: 0,
-    border_right: 0
   },
   (
-    if $is_focus_ws then
-      "#dddddd"
-    else
-      "#666666"
-    end as $border |
     con::focused.id as $focus_id |
     [con::leaves] |
     if . == [] then
       if $is_focus_ws then
-        {fg: "#dddddd", bg: "#555555" }
+        { color: "#cccccc",
+          background: "#555555",
+          border: "#dddddd" }
       else
-        {fg: "#888888", bg: "#000000"}
-      end as {$fg, $bg} |
+        { color: "#888888",
+          background: "#000000",
+          border: "#000000" }
+      end +
       {
         name: "workspace",
         instance: "\($ws.num)",
-        full_text: "…",
+        full_text: "\u2731",
         separator: false,
-        separator_block_width: 0,
-        color: $fg,
-        background: $bg,
-        border: $border
+        separator_block_width: 0
       }
     else
       .[0].first = true |
       .[] |
       (.id == $focus_id) as $is_focus_win |
       if $is_focus_win and $is_focus_ws then
-        {fg: "#dddddd", bg: "#555555" }
+        { color: "#dddddd",
+          background: "#555555",
+          border: "#dddddd" }
       elif $is_focus_win then
-        {fg: "#aaaaaa", bg: "#333333"}
+        { color: "#aaaaaa",
+          background: "#333333",
+          border: "#666666" }
       else
-        {fg: "#888888", bg: "#000000"}
-      end as {$fg, $bg} |
+        { color: "#888888",
+          background: "#000000",
+          border: "#666666" }
+      end +
       {
         name: "taskbar",
         instance: "\(.id)",
         full_text: " \(icon::icon)  \(title | util::truncate(20))",
         separator: false,
-        separator_block_width: 0,
-        color: $fg,
-        background: $bg,
-        border: $border,
-        border_top: 1,
-        border_left: if .first? then 1 else 0 end,
-        border_bottom: 1,
-        border_right: 1
+        separator_block_width: 3
       }
     end
   )
