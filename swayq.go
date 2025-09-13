@@ -122,6 +122,7 @@ func main() {
 		}
 	}
 	varArgs := map[string]any{
+		"module": args[0],
 	 	"named": kwargs,
 	 	"positional": nargs,
 	 }
