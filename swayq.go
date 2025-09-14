@@ -87,37 +87,50 @@ func main() {
 		}
 	}
 
-	// Pass command-line arguments through. This is a simplistic solution:
-	// kwargs will lose ordering information, all short-form arguments are 
-	// simple flags, and only long-form arguments can be given a string value
-	// with `=`. Repeating arguments has no effect at the moment (though this
-	// could be changed). If this simplicity ever does lead to problems, we
-	// might consider an option in the module metadata to turn off named
-	// argument parsing, and let the user handle it instead.
+	// Pass command-line arguments through.
 	kwargs := make(map[string]any)
 	nargs := make([]any, 0)
-	doubledash := false
-	for _, arg := range args[idx_args:] {
-		if !doubledash && arg[0] == '-' {
-			if len(arg) == 1 {
-				continue
-			} else if arg == "--" {
-				doubledash = true
-			} else {
-				if arg[1] == '-' {
-					j := strings.IndexByte(arg, '=')
-					if j > 0 {
-						kwargs[arg[2:j]] = []any{arg[j+1:]}
-					} else {
-						kwargs[arg[2:]] = []any{""}
-					}
+
+	// In the simple case, all arguments are positional arguments and any
+	// additional parsing is on the user. However, there is also experimental
+	// argument-parsing that is currently quite simplistic and can be enabled
+	// by setting any value for `args` in the module's metadata. kwargs will
+	// lose ordering information, all short-form arguments are simple flags,
+	// and only long-form arguments can be given a string value with `=`.
+	// Repeating arguments has no effect at the moment.
+	// TODO for the future: flesh out this argument parsing, so that we can
+	// use it to automatically generate the help text, completions, and 
+	// do argument validation.
+	// (!) It will *not* be backwards compatible, so this should be considered
+	// experimental.
+	if query.Meta != nil && query.Meta.ToValue()["args"] != nil {
+		doubledash := false
+		for _, arg := range args[idx_args:] {
+			if !doubledash && arg[0] == '-' {
+				if len(arg) == 1 {
+					continue
+				} else if arg == "--" {
+					doubledash = true
 				} else {
-					for _, char := range arg[1:] {
-						kwargs[string(char)] = 1
+					if arg[1] == '-' {
+						j := strings.IndexByte(arg, '=')
+						if j > 0 {
+							kwargs[arg[2:j]] = []any{arg[j+1:]}
+						} else {
+							kwargs[arg[2:]] = []any{""}
+						}
+					} else {
+						for _, char := range arg[1:] {
+							kwargs[string(char)] = 1
+						}
 					}
 				}
+			} else {
+				nargs = append(nargs, arg)
 			}
-		} else {
+		}
+	} else {
+		for _, arg := range args[idx_args:] {
 			nargs = append(nargs, arg)
 		}
 	}
