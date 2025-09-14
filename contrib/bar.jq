@@ -31,7 +31,7 @@ def title:
   .name | sub(" — Mozilla Firefox"; "")
 ;
 
-def workspace($is_focus_ws):
+def workspace($is_focus_ws; $color):
   . as $ws |
   {
     name: "workspace",
@@ -40,21 +40,20 @@ def workspace($is_focus_ws):
     markup: "pango",
     separator: false,
     separator_block_width: 0,
-    color: "#888888",
-    background: "#000000",
+    color: "#888888"
   },
   (
     con::focused.id as $focus_id |
     [con::leaves] |
     if . == [] then
       if $is_focus_ws then
-        { color: "#cccccc",
-          background: "#555555",
-          border: "#dddddd" }
+        { color: $color.focused_workspace_text,
+          background: $color.focused_workspace_bg,
+          border: $color.focused_workspace_border }
       else
-        { color: "#888888",
-          background: "#000000",
-          border: "#000000" }
+        { color: $color.inactive_workspace_text,
+          background: $color.inactive_workspace_bg,
+          border: $color.inactive_workspace_border }
       end +
       {
         name: "workspace",
@@ -68,17 +67,17 @@ def workspace($is_focus_ws):
       .[] |
       (.id == $focus_id) as $is_focus_win |
       if $is_focus_win and $is_focus_ws then
-        { color: "#dddddd",
-          background: "#555555",
-          border: "#dddddd" }
+        { color: $color.focused_workspace_text,
+          background: $color.focused_workspace_bg,
+          border: $color.focused_workspace_border }
       elif $is_focus_win then
-        { color: "#aaaaaa",
-          background: "#333333",
-          border: "#666666" }
+        { color: $color.active_workspace_text,
+          background: $color.active_workspace_bg,
+          border: $color.active_workspace_border }
       else
-        { color: "#888888",
-          background: "#000000",
-          border: "#666666" }
+        { color: $color.inactive_workspace_text,
+          background: $color.inactive_workspace_bg,
+          border: $color.inactive_workspace_border }
       end +
       {
         name: "taskbar",
@@ -147,15 +146,14 @@ def date:
   sleep(15),
   date;
 
-def tasks($monitor):
+def tasks:
+  ipc::get_bar_config($ARGS.positional[0] // "bar1") as $cfg |
   ipc::subscribe(["workspace", "window", "tick"]) |
   ipc::get_tree |
   [
-    if $monitor != null then
-      .nodes[] | select(.name == $monitor)
-    else
-      con::focused(.type == "output")
-    end |
+    .nodes[] |
+    debug($cfg) |
+    select(.name == $cfg.outputs[]) |
     (
       .focus[0] as $focus |
       .nodes[],
@@ -167,7 +165,7 @@ def tasks($monitor):
         first(ws::free) |
         {num: ., nodes: [], floating_nodes: []}
       end |
-      workspace(.id == $focus)
+      workspace(.id == $focus; $cfg.colors)
     ),
     # This shouldn't be necessary, but there's weird padding
     {full_text: "  "}
@@ -182,7 +180,7 @@ def tasks($monitor):
 "[[],",
 (
   # Create filters
-  ["click_handler", "tasks(\($ARGS.positional[0] | tojson))", "pulseaudio", "battery", "date"] |
+  ["click_handler", "tasks", "pulseaudio", "battery", "date"] |
   [ . as $args | range(length) | . as $i |
     $args[.] | "\(.) | {channel: \($i), content: .}"] |
 
