@@ -147,7 +147,9 @@ def date:
   date;
 
 def tasks:
-  ipc::get_bar_config($ARGS.positional[0] // "bar1") as $cfg |
+  $ARGS.positional[0] as $bar_id |
+  if $bar_id == null then "No bar id given" | error end |
+  ipc::get_bar_config($bar_id) as $cfg |
   ipc::subscribe(["workspace", "window", "tick"]) |
   ipc::get_tree |
   [

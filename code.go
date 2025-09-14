@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"log"
 	"fmt"
 	"sync"
 	"time"
@@ -9,6 +10,19 @@ import (
 	"encoding/json"
 	"github.com/itchyny/gojq"
 )
+
+func deepCopy(x any) (any, error) {
+	var xCopy any
+	xJson, err := json.Marshal(x)
+	if err != nil {
+		return nil, errors.New("error marshalling input")
+	}
+	err = json.Unmarshal(xJson, &xCopy)
+	if err != nil {
+		return nil, errors.New("error unmarshalling input")
+	}
+	return xCopy, nil
+}
 
 type channelIter struct {
 	ch *chan any
@@ -24,7 +38,7 @@ func (iter channelIter) Next() (any, bool) {
 }
 
 // Process a query and send result to channel
-func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoader, inputIter gojq.Iter) {
+func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoader, inputIter gojq.Iter, varArgs any) {
 	defer iter.wg.Done()
 
 	query, err := gojq.Parse(queryStr)
@@ -32,13 +46,13 @@ func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoade
 		*iter.ch <- err
 		return
 	}
-	code, err := compile(query, loader, inputIter)
+	code, err := compile(query, loader, inputIter, varArgs)
 	if err != nil {
 		*iter.ch <- err
 		return
 	}
 
-	runIter := code.Run(input, nil)
+	runIter := code.Run(input, varArgs)
 	for {
 		val, ok := runIter.Next()
 		if !ok {
@@ -48,7 +62,11 @@ func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoade
 	}
 }
 
-func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (*gojq.Code, error) {
+func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, varArgs any) (*gojq.Code, error) {
+	varArgsCopy, err := deepCopy(varArgs)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	return gojq.Compile(query,
 		gojq.WithModuleLoader(loader),
 		gojq.WithEnvironLoader(os.Environ),
@@ -78,18 +96,12 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter) (
 					return gojq.NewIter(errors.New("a filter to be evaluated must be a string"))
 				}
 
-				// Deep copy the input value
-				var xCopy any
-				xJson, err := json.Marshal(x)
+				xCopy, err := deepCopy(x)
 				if err != nil {
-					return gojq.NewIter(errors.New("error marshalling input"))
-				}
-				err = json.Unmarshal(xJson, &xCopy)
-				if err != nil {
-					return gojq.NewIter(errors.New("error unmarshalling input"))
+					return gojq.NewIter(err)
 				}
 
-				go eval(&iter, queryString, xCopy, loader, inputIter)
+				go eval(&iter, queryString, xCopy, loader, inputIter, varArgsCopy)
 			}
 			go func(){
 				wg.Wait()

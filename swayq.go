@@ -148,7 +148,7 @@ func main() {
 	}
 
 	if query != nil {
-		code, err := compile(query, &loader, inputIter)
+		code, err := compile(query, &loader, inputIter, varArgs)
 		if err != nil {
 			log.Fatalln(err)
 		}
