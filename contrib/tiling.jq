@@ -1,6 +1,6 @@
 # A module for seamless and easily configurable dynamic tiling in Sway/i3.
 #
-# The n-capacity layout is a generalization of layouts such as master-stack and
+# The overflow-layout is a generalization of layouts such as master-stack and
 # fibonacci. In it, a container follows a schema that tells it to accommodate
 # at most $n$ child leaves (growing either forward or backward, and inserting
 # new windows either in front or in the back) until the next one is split and
@@ -14,7 +14,7 @@
 # place.
 
 import "builtin/ipc" as ipc;
-import "builtin/con" as tree;
+import "builtin/con" as con;
 import "util" as util;
 
 def INSERT: "insert"; # The mark to which to send new windows
@@ -230,7 +230,7 @@ def _subschemas_find_representative($container):
         select(.id as $id | any($ids[]; . == $id) | not) |
         # And it must also have at least one of the assigned windows, so that
         # we can be sure that the container still exists
-        select(tree::find(.id == $sub.windows[0].id))
+        select(con::find(.id == $sub.windows[0].id))
         # TODO Think about how to pick the container so as to need the
         # smallest number of Sway commands. You could find an optimal
         # assignment by mapping each subschema to a container such that the
@@ -257,7 +257,7 @@ def _subschemas_find_representative($container):
 def normalize($schema; $root_schema; $marked):
   . as $container |
   ($schema |
-    .windows |= (. // [$container | tree::leaves]) |
+    .windows |= (. // [$container | con::leaves]) |
     if has("subschemas") then 
       _subschemas_assign_windows |
       _subschemas_find_representative($container) |
@@ -284,8 +284,8 @@ def normalize($schema):
       empty
     end
   end |
-  # tree::find(.marks | any(. == INSERT)) as $insert |
-  # tree::find(.marks | any(. == SWAP)) as $swap |
+  # con::find(.marks | any(. == INSERT)) as $insert |
+  # con::find(.marks | any(. == SWAP)) as $swap |
   ($schema | defaults) as $schema |
   normalize($schema; $schema; false);
 
@@ -312,7 +312,7 @@ def main($initial_schema):
         or ($e.event == "workspace" and $e.change == "focus") then
       [
         ipc::get_tree |
-        tree::focused(.type == "workspace") |
+        con::focused(.type == "workspace") |
         # If the workspace is now entirely empty, we just need to make sure that any
         # new window opened won't appear in some other workspace.
         if .nodes | length == 0 then
