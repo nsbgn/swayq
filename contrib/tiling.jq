@@ -254,7 +254,7 @@ def _subschemas_find_representative($container):
 # Therefore, we make sure that, at each step, we only access the container's id
 # and the attributes of any child that is not (and does not have any
 # descendants of) a container that may have already moved.
-def normalize($schema; $root_schema; $marked):
+def apply($schema; $root_schema; $marked):
   . as $container |
   ($schema |
     .windows |= (. // [$container | con::leaves]) |
@@ -273,10 +273,10 @@ def normalize($schema; $root_schema; $marked):
     . as $subschema |
     select(.occupancy > 0) |
     .representative |
-    normalize($subschema; $root_schema; $marked)
+    apply($subschema; $root_schema; $marked)
   );
 
-def normalize($schema):
+def apply($schema):
   if .type == "workspace" then
     if .nodes != [] then
       .nodes[0]
@@ -287,7 +287,7 @@ def normalize($schema):
   # con::find(.marks | any(. == INSERT)) as $insert |
   # con::find(.marks | any(. == SWAP)) as $swap |
   ($schema | defaults) as $schema |
-  normalize($schema; $schema; false);
+  apply($schema; $schema; false);
 
 def init:
   # To instantly put new tiling windows where they belong, without a moment of 
@@ -318,7 +318,7 @@ def main($initial_schema):
         if .nodes | length == 0 then
           "unmark \(SWAP); unmark \(INSERT)"
         else
-          normalize($schema)
+          apply($schema)
         end
       ] | do
     else
