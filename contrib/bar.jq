@@ -31,6 +31,19 @@ def title:
   .name | sub(" — Mozilla Firefox"; "")
 ;
 
+def marks:
+  .marks |
+  if . == [] then
+    ""
+  else
+    map(
+      select(startswith("_") | not) |
+      "<span weight=\"bold\" alpha=\"55%\" style=\"italic\">\(.)</span>"
+    ) |
+    join("+") |
+    " \(.)"
+  end;
+
 def workspace($is_focus_ws; $color):
   . as $ws |
   {
@@ -82,7 +95,8 @@ def workspace($is_focus_ws; $color):
       {
         name: "taskbar",
         instance: "\(.id)",
-        full_text: " \(icon::icon)  \(title | util::truncate(20))",
+        markup: "pango",
+        full_text: " \(icon::icon)  \(title | util::truncate(20))\(marks)",
         separator: false,
         separator_block_width: 3
       }
