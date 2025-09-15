@@ -75,7 +75,7 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, v
 		gojq.WithFunction("debug", 0, 0, funcDebug),
 		gojq.WithFunction("stderr", 0, 0, funcStderr),
 		gojq.WithIterFunction("sleep", 1, 1, funcSleep),
-		gojq.WithIterFunction("_ipc", 3, 3, funcIpc),
+		gojq.WithIterFunction("_ipc", 4, 4, funcIpc),
 		gojq.WithIterFunction("exec", 1, 1, funcExec),
 		gojq.WithIterFunction("eval", 1, 1, func (x any, xs []any) gojq.Iter {
 
@@ -113,24 +113,29 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, v
 }
 
 func funcIpc(_ any, xs []any) gojq.Iter {
-	messageType, ok0 := xs[0].(int)
-	if !ok0 {
+	socket, ok := xs[0].(string)
+	if !ok {
+		return gojq.NewIter(errors.New("socket param must be a string"))
+	}
+
+	messageType, ok := xs[1].(int)
+	if !ok {
 		return gojq.NewIter(errors.New("messageType param must be an int"))
 	}
 
-	keepAlive, ok2 := xs[2].(bool)
-	if !ok2 {
-		return gojq.NewIter(errors.New("keepAlive param must be a bool"))
-	}
-
 	var payload *string = nil
-	if str, ok := xs[1].(string); ok {
+	if str, ok := xs[2].(string); ok {
 		payload = &str
-	} else if xs[1] != nil {
+	} else if xs[2] != nil {
 		return gojq.NewIter(errors.New("payload param must be a string"))
 	}
 
-	iter, err := swayq_ipc(messageType, payload, keepAlive)
+	keepAlive, ok := xs[3].(bool)
+	if !ok {
+		return gojq.NewIter(errors.New("keepAlive param must be a bool"))
+	}
+
+	iter, err := swayq_ipc(&socket, messageType, payload, keepAlive)
 	if err != nil {
 		return gojq.NewIter(err)
 	} else {
