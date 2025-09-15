@@ -150,11 +150,11 @@ def tasks:
   $ARGS.positional[0] as $bar_id |
   if $bar_id == null then "No bar id given" | error end |
   ipc::get_bar_config($bar_id) as $cfg |
+  if $cfg.error then "Could not find bar" | error end |
   ipc::subscribe(["workspace", "window", "tick"]) |
   ipc::get_tree |
   [
     .nodes[] |
-    debug($cfg) |
     select(.name == $cfg.outputs[]) |
     (
       .focus[0] as $focus |

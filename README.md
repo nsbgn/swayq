@@ -7,10 +7,11 @@ change without warning.*
 takes [`gojq`][gojq] and simply adds internal functions corresponding to 
 i3's [IPC spec][ipc], such as `ipc::subscribe` and `ipc::run_command`.
 
-The application also comes [bundled](./modules/) with some useful 
+The application also comes [bundled](./contrib/) with some useful 
 scripts, such as:
 
 - Seamless and configurable dynamic tiling
+- A swaybar-compatible statusbar, like [i3status-rust]
 - Visualising the layout tree
 - Breaking out to the first free workspace
 
@@ -85,3 +86,4 @@ configuration:
 [gojq]: https://github.com/itchyny/gojq
 [i3ipc]: https://github.com/altdesktop/i3ipc-python
 [go-i3]: https://github.com/i3/go-i3
+[i3status-rust]: https://github.com/greshake/i3status-rust
