@@ -1,17 +1,21 @@
-# A module for seamless and easily configurable dynamic tiling in Sway/i3.
-#
-# The overflow-layout is a generalization of layouts such as master-stack and
-# fibonacci. In it, a container follows a schema that tells it to accommodate
-# at most $n$ child leaves (growing either forward or backward, and inserting
-# new windows either in front or in the back) until the next one is split and
-# additional windows spill into this 'overflow container'. This container, in
-# turn, follows its own schema, and so on. If there is no suitable overflow
-# container, the window will go to a new workspace.
-#
-# A key consideration in the design is that it must be seamless. That is, no
-# assumptions must be made about the state of the layout tree before the script
-# takes effect, and we try to avoid moments of flickering as windows move into
-# place.
+module {
+name: "tiling",
+description: "Seamless and customizable dynamic tiling.",
+help:
+"The overflow layout is a very general tiling approach that encompasses common
+layouts such as master-stack and fibonacci, but that fits a much broader range
+of layouts.
+
+In short, each container follows a *schema* that tells it to accommodate at
+most N child containers. Any one of those children may, in turn, follow their
+own subschema, and so on. As one container fills up, new windows will spill
+over into the next container, according to some predetermined priority.
+
+A key consideration in the design of this script is that it must be seamless.
+That is, no assumptions must be made about the state of the layout tree before
+the script takes effect, and we try to avoid any moments of flickering as
+windows move into place."
+};
 
 import "builtin/ipc" as ipc;
 import "builtin/con" as con;
@@ -36,7 +40,7 @@ def do:
     "* * *"
   end;
 
-def mark($mark; $yes):
+def mark($mark; $yes): 
   if $yes then
     if .marks | any(. == $mark) | not then
       "[con_id=\(.id)] mark --add \($mark)"
@@ -50,33 +54,37 @@ def mark($mark; $yes):
 def insert_after: mark(INSERT; true);
 def insert_before: mark(INSERT; true), mark(SWAP; true);
 
-def _calculate_capacity:
-  if has("subschemas") then
-    .subschemas[] |= _calculate_capacity |
+# Add `.capacity` key to each schema (and check that already stated capacity
+# does not conflict with this)
+def _assign_capacity:
+  if .subschemas then
+    .subschemas[] |= _assign_capacity |
     (.subschemas | map(.capacity) | add) as $capacity |
-    if has("capacity") | not then
+    if $capacity < 1 then
+      "Capacity must be above 0" |
+      error
+    elif .capacity | not then
       .capacity = $capacity
     elif .capacity != $capacity then
       "Stated capacity \(.capacity) does not match calculated capacity \($capacity)" |
       error
     end
-  elif has("capacity") | not then
+  elif .capacity | not then
     .capacity = 1
   end;
 
-def defaults:
+# A schema is an object. This filter adds default values for each key.
+def _assign_defaults:
   # The proportion of space to be dedicated to this container compared to other
   # containers.
   .size |= (. // 1) |
 
   # The layout of this container
-  # TODO: Determine from workspace
   .layout |= (
     . // "splith" |
     . as $x |
-    if any("splith", "splitv", "tabbed", "stacked"; . == $x) |
-    not then
-    error
+    if any("splith", "splitv", "tabbed", "stacked"; . == $x) | not then
+      error
     end) |
 
   .priority |= (. // 0) |
@@ -86,26 +94,32 @@ def defaults:
   .reversed |= (. // false) |
 
   # The number of nodes that can be accommodated by this container.
-  _calculate_capacity
+  .subschemas[]? |= _assign_defaults;
 
-  # The 
-;
-
-# Assume a schema that has been assigned `.windows` and that has been
-# appropriately marked with `.insert`. Now generate commands for generating the
-# marks that will put the next future window in the correct spot.
-# We put marks to put it before or after a window with a capacity of one,
-# so the only time any reordering should take place is when we want to put
-# a window between two non-leaf containers. (minimizing the reordering even
-# in this case is a TODO)
-def _commands_for_adding_insertion_marks($schema):
+# Assume a schema such that it and all its subschemas satisfy the following:
+# - The integer at `.occupancy` is the number of windows assigned to this
+# schema (guaranteed to be at or below `.capacity`)
+# - Windows have been assigned at the `.windows` key
+# - The boolean at `.insert` says whether the next future window should appear
+# as a descendant of the corresponding container.
+#
+# Now, we generate commands for setting the insert/swap marks to put the next
+# future window in the correct spot. We can always put new windows after leaf
+# containers, or at the end of non-leaf containers, (by setting the insert mark),
+# or before leaf containers (by setting both the insert and swap marks).
+#
+# Therefore, the only time any windows other than the new window will be
+# shuffled around, is when the new window is put between two non-leaf
+# containers, or at the beginning of a container before a non-leaf container.
+# (minimizing the reordering even in this case is a TODO)
+def _apply_insertion_marks($schema):
   $schema |
-  if has("subschemas") then
+  if .subschemas then
     .subschemas |
     (util::index_of(.insert) // empty) as $target |
     # If there is already something in the container, we handle it downstream
     if .[$target].occupancy > 0 then
-      .[$target] | _commands_for_adding_insertion_marks($schema)
+      .[$target] | _apply_insertion_marks($schema)
     # But if it is still empty, we must put the insertion mark on one of the
     # existing windows
     else
@@ -130,7 +144,7 @@ def _commands_for_adding_insertion_marks($schema):
 
 # If the current container is a leaf, split it according to the schema, so that
 # it can be used as a container.
-def _commands_for_splitting_leaf_container($layout):
+def _apply_split($layout):
   if .layout == "none" then 
     "[con_id=\(.id)] split toggle",
     "[con_id=\(.id)] layout \($layout)"
@@ -141,7 +155,7 @@ def _commands_for_splitting_leaf_container($layout):
   end;
 
 # C
-def _commands_for_moving_containers($targets):
+def _apply_movement($targets):
   . as $container |
   # TODO be smarter about this
   if [.nodes[].id] != [$targets[].id] then
@@ -163,7 +177,7 @@ def _commands_for_moving_containers($targets):
 # to the priority, position and capacity of each subschema, we (1) assign a
 # partition of windows and (2) determine whether any newly opened window should
 # appear there.
-def _subschemas_assign_windows:
+def _assign_windows:
   .windows as $windows |
   .subschemas |= (
     # Remember the position of each subschema
@@ -202,13 +216,14 @@ def _subschemas_assign_windows:
     )]
   );
 
-def _subschemas_find_representative($container):
-  # Each occupied subschema should have a 'representative'. This is a
-  # container that will hold all the windows assigned to that subschema.
-  # Ideally, this would be an existing container that already mostly
-  # corresponds to the schema, but if we can't find an appropriate one, not
-  # to worry: we can safely pick an arbitrary leaf container, as it will
-  # be split into a fresh container.
+# Each occupied subschema should have a 'representative'. This is a container
+# that already exists in the tiling tree, and that will act *as if* it is the
+# container that will hold the windows assigned to the schema. Ideally, this
+# would be an existing container that already (mostly) corresponds to the
+# schema, but if we can't find an appropriate one, not to worry: we can safely
+# pick an arbitrary leaf container, as it will be split into a fresh container.
+def _assign_representative($container):
+  if .subschemas then
   .subschemas |= [foreach .[] as $sub (
     # Init
     [];
@@ -244,9 +259,10 @@ def _subschemas_find_representative($container):
     .[-1] as $new |
     $sub |
     .representative = $new
-  )];
+  )]
+  end;
 
-# Normalize a workspace or container into an n-capacity layout. This is a
+# Arrange a workspace or container into an overflow-layout. This is a
 # subtler affair than it may at first appear, because, for a seamless
 # experience, we send all our commands to the window manager in a single IPC
 # message. Therefore, we cannot take the input layout tree at face value: some
@@ -259,19 +275,18 @@ def apply($schema; $root_schema; $marked):
   ($schema |
     .windows |= (. // [$container | con::leaves]) |
     if has("subschemas") then 
-      _subschemas_assign_windows |
-      _subschemas_find_representative($container) |
+      _assign_windows |
+      _assign_representative($container) |
       .containers = [.subschemas[].representative]
     else
       .containers = .windows
     end) as $schema |
-  _commands_for_adding_insertion_marks($schema),
-  _commands_for_splitting_leaf_container($schema.layout),
-  _commands_for_moving_containers($schema.containers),
-  ( .subschemas // empty |
-    .[] |
-    . as $subschema |
+  _apply_insertion_marks($schema),
+  _apply_split($schema.layout),
+  _apply_movement($schema.containers),
+  ( .subschemas.[]? |
     select(.occupancy > 0) |
+    . as $subschema |
     .representative |
     apply($subschema; $root_schema; $marked)
   );
@@ -286,7 +301,7 @@ def apply($schema):
   end |
   # con::find(.marks | any(. == INSERT)) as $insert |
   # con::find(.marks | any(. == SWAP)) as $swap |
-  ($schema | defaults) as $schema |
+  ($schema | _assign_defaults) as $schema |
   apply($schema; $schema; false);
 
 def init:
@@ -330,7 +345,8 @@ def master_stack: main({
   layout: "splith",
   nodes: [
     { name: "master",
-      priority: 1},
+      priority: 1
+    },
     { name: "stack",
       capacity: infinite,
       layout: "splitv",
