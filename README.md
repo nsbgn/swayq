@@ -3,17 +3,19 @@
 *This application is still rough around the edges and interfaces may 
 change without warning.*
 
-`swayq` provides a fast and concise method to script [i3] and [Sway]. It 
-takes [`gojq`][gojq] and simply adds internal functions corresponding to 
-i3's [IPC spec][ipc], such as `ipc::subscribe` and `ipc::run_command`.
+`swayq` provides a concise and performant way to script [i3] and [Sway]. 
+It simply takes [`gojq`][gojq] and adds internal functions corresponding 
+to i3's [IPC spec][ipc], such as `subscribe`, as well as functions for 
+`exec`uting external commands and `eval`uating filters.
 
-The application also comes [bundled](./contrib/) with some useful 
-scripts, such as:
+The application comes [bundled](./contrib/) with some useful scripts, 
+such as:
 
-- Seamless and configurable dynamic tiling
-- A swaybar-compatible statusbar, like [i3status-rust]
-- Visualising the layout tree
-- Breaking out to the first free workspace
+- Seamless and endlessly configurable dynamic tiling
+- A i3bar-compatible statusbar, as an alternative to [i3blocks] or 
+  [i3status-rust]
+- An ASCII visualisation of the layout tree
+- A module for navigating free workspaces
 
 ## Rationale
 
@@ -28,12 +30,11 @@ transformations: [jq]? This allows you to closely follow i3's original
 while staying closer to the speed of a compiled program — and the result 
 is often less verbose than either!
 
-Much of this would also be achievable with a simple shell script that 
-ties together `jq`/`gojq`/`jaq` with `i3msg`/`swaymsg`. However, the 
-binary offers some advantages, like the ability communicate with the 
+Much of this would also be achievable by cobbling together 
+`jq`/`gojq`/`jaq` and `i3msg`/`swaymsg` with shell scripts. However, the 
+binary offers some advantages, like the ability to communicate with the 
 window manager at any point during processing, which makes for more 
-efficient and readable scripts. Finally, you will presumably run these 
-commands quite often, so a low footprint is desirable.
+readable scripts with a lower footprint.
 
 ## Installation
 
@@ -87,3 +88,4 @@ configuration:
 [i3ipc]: https://github.com/altdesktop/i3ipc-python
 [go-i3]: https://github.com/i3/go-i3
 [i3status-rust]: https://github.com/greshake/i3status-rust
+[i3blocks]: https://github.com/vivien/i3blocks
