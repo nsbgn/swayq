@@ -152,9 +152,15 @@ func funcDebug(v any, _ []any) any { // FIXME
 }
 
 func funcStderr(v any, _ []any) any { // FIXME
-	item, err := gojq.Marshal(v)
-	if err == nil {
-		fmt.Fprint(os.Stderr, string(item))
+	if str, ok := v.(string); ok {
+		fmt.Fprintln(os.Stderr, str)
+	} else {
+		item, err := gojq.Marshal(v)
+		if err == nil {
+			fmt.Fprintln(os.Stderr, string(item))
+		} else {
+			log.Fatalln(err)
+		}
 	}
 	return v
 }
