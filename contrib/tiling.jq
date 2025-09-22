@@ -1,20 +1,6 @@
 module {
 name: "tiling",
 description: "Seamless and customizable dynamic tiling.",
-help:
-"The overflow layout is a very general tiling strategy that encompasses common
-layouts such as master-stack and fibonacci, but that fits a much broader range
-of tiling approaches.
-
-In short, each container follows a *schema* that tells it to accommodate at
-most N child containers. Any one of those children may, in turn, follow their
-own subschema, and so on. As one container fills up, new windows will spill
-over into the next container, according to some predetermined priority.
-
-A key consideration in the design of this script is that it must be seamless.
-That is, no assumptions must be made about the state of the layout tree before
-the script takes effect, and we try to avoid any moments of flickering as
-windows move into place."
 };
 
 import "builtin/ipc" as ipc;
@@ -30,7 +16,6 @@ def TMP: "tmp"; # Temporary mark
 def validate_schema:
   .subschemas[]? |= validate_schema |
 
-  # The layout of this container
   .layout |= (
     . // "splith" |
     . as $x |
@@ -38,12 +23,7 @@ def validate_schema:
       "'\(.)' is not a valid layout" |
       error
     end) |
-
   .priority |= (. // 0) |
-
-  # If the capacity of a schema is greater than 1 but there are no subschemas,
-  # then new windows added to this container will appear at the end. If this is
-  # set to true, they are added at the beginning.
   .reversed |= (. // false) |
 
   # Add `.capacity` key to each schema (and check that already stated capacity

@@ -8,10 +8,11 @@ It simply takes [`gojq`][gojq] and adds internal functions corresponding
 to i3's [IPC spec][ipc], such as `subscribe`, as well as functions for 
 `exec`uting external commands and `eval`uating filters.
 
-The application comes [bundled](./contrib/) with some useful scripts, 
+The application comes [bundled](./contrib/) with some useful modules, 
 such as:
 
-- Seamless and endlessly configurable dynamic tiling
+- [`tiling`](doc/swayq-tiling.md): Seamless and endlessly configurable 
+  dynamic tiling
 - A i3bar-compatible statusbar, as an alternative to [i3blocks] or 
   [i3status-rust]
 - An ASCII visualisation of the layout tree
