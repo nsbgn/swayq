@@ -44,27 +44,27 @@ master-stack layout looks like this:
 
 The following section describes the keys of a schema.
 
-: `subschemas`
-  A list of one or more schemas. If a schema has subschemas, then the 
+`subschemas`
+: A list of one or more schemas. If a schema has subschemas, then the 
   corresponding container will be split up into multiple containers, 
   each of which follows the corresponding schema. If this key is absent, 
   then all windows assigned to the schema will be direct children of the 
   corresponding container.
 
-: `priority`
-  A number indicating the order in which containers will be filled.
+`priority`
+: A number indicating the order in which containers will be filled.
 
-: `layout`
-  A string corresponding to the i3 layout variants `splitv`, `splith`, 
+`layout`
+: A string corresponding to the i3 layout variants `splitv`, `splith`, 
   `tabbed` and `stacked`. Defaults to `splith`.
 
-: `capacity`
-  A number indicating how many leaf windows can be accommodated by the 
+`capacity`
+: A number indicating how many leaf windows can be accommodated by the 
   schema. If subschemas are specified, the capacity is the sum of 
   capacities of the subschemas. Otherwise, this defaults to 1.
 
-: `reverse`
-  A boolean. If the capacity of a schema is greater than 1 but there are 
+`reverse`
+: A boolean. If the capacity of a schema is greater than 1 but there are 
   no subschemas, then new windows added to this container will appear at 
   the end. If this boolean is set to true, then they will appear at the 
   beginning instead.
