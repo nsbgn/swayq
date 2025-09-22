@@ -4,12 +4,12 @@ package main
 
 import (
 	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"log"
 	"fmt"
 	"errors"
-	"io/ioutil"
 	"github.com/itchyny/gojq"
 )
 
@@ -114,22 +114,25 @@ func listModules() ([]moduleLoc, error) {
 	}
 	config_dir = filepath.Join(config_dir, "swayq")
 
-	var modules []moduleLoc
-	files, err := ioutil.ReadDir(config_dir)
+	config_dir, err := filepath.EvalSymlinks(config_dir)
 	if err != nil {
-		return nil, err
+		log.Fatalln(err)
 	}
-	for _, file := range files {
-		name := file.Name()
-		ext := filepath.Ext(name)
-		if file.IsDir() || ext != ".jq" {
-			continue
+
+	var modules []moduleLoc
+	filepath.WalkDir(config_dir, func(path string, info fs.DirEntry, err error) error {
+		if info != nil && !info.IsDir() && strings.HasSuffix(path, ".jq") {
+			relpath, err := filepath.Rel(config_dir, path)
+			if err != nil {
+				return err
+			}
+			modules = append(modules, moduleLoc{
+				relpath[:len(relpath)-3],
+				filepath.Join(config_dir, relpath),
+			})
 		}
-		modules = append(modules, moduleLoc{
-			strings.TrimSuffix(name, ext),
-			filepath.Join(config_dir, name),
-		})
-	}
+		return nil
+	})
 
 	builtins := listBuiltins()
 	for _, builtin := range builtins {
