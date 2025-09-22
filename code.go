@@ -38,7 +38,7 @@ func (iter channelIter) Next() (any, bool) {
 }
 
 // Process a query and send result to channel
-func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoader, inputIter gojq.Iter, varArgs any) {
+func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoader, inputIter gojq.Iter, socket any, varArgs any) {
 	defer iter.wg.Done()
 
 	query, err := gojq.Parse(queryStr)
@@ -46,13 +46,13 @@ func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoade
 		*iter.ch <- err
 		return
 	}
-	code, err := compile(query, loader, inputIter, varArgs)
+	code, err := compile(query, loader, inputIter, socket, varArgs)
 	if err != nil {
 		*iter.ch <- err
 		return
 	}
 
-	runIter := code.Run(input, varArgs)
+	runIter := code.Run(input, socket, varArgs)
 	for {
 		val, ok := runIter.Next()
 		if !ok {
@@ -62,15 +62,19 @@ func eval(iter *channelIter, queryStr string, input any, loader gojq.ModuleLoade
 	}
 }
 
-func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, varArgs any) (*gojq.Code, error) {
+func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, socket any, varArgs any) (*gojq.Code, error) {
 	varArgsCopy, err := deepCopy(varArgs)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	socketCopy, err := deepCopy(socket)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	return gojq.Compile(query,
 		gojq.WithModuleLoader(loader),
 		gojq.WithEnvironLoader(os.Environ),
-		gojq.WithVariables([]string{"$ARGS"}),
+		gojq.WithVariables([]string{"$SOCK", "$ARGS"}),
 		gojq.WithInputIter(inputIter),
 		gojq.WithFunction("debug", 0, 0, funcDebug),
 		gojq.WithFunction("stderr", 0, 0, funcStderr),
@@ -101,7 +105,7 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, v
 					return gojq.NewIter(err)
 				}
 
-				go eval(&iter, queryString, xCopy, loader, inputIter, varArgsCopy)
+				go eval(&iter, queryString, xCopy, loader, inputIter, socketCopy, varArgsCopy)
 			}
 			go func(){
 				wg.Wait()

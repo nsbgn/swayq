@@ -138,7 +138,12 @@ func main() {
 		"module": args[0],
 	 	"named": kwargs,
 	 	"positional": nargs,
-	 }
+	}
+
+	socket := os.Getenv("SWAYSOCK")
+	if socket == "" {
+		socket = os.Getenv("I3SOCK")
+	}
 
 	var inputIter gojq.Iter
 	if *rawInputFlag {
@@ -148,12 +153,12 @@ func main() {
 	}
 
 	if query != nil {
-		code, err := compile(query, &loader, inputIter, varArgs)
+		code, err := compile(query, &loader, inputIter, socket, varArgs)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		iter := code.Run(nil, varArgs)
+		iter := code.Run(nil, socket, varArgs)
 		for {
 			val, ok := iter.Next()
 			if !ok {
