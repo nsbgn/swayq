@@ -98,12 +98,7 @@ func findModulePath(name string) (string, error) {
 	return "", errors.New(msg)
 }
 
-type moduleLoc struct {
-	name string
-	location string
-}
-
-func listModules() ([]moduleLoc, error) {
+func listModules() ([]string, error) {
 	config_dir := os.Getenv("XDG_CONFIG_HOME")
 	if config_dir == "" {
 		home, err := os.UserHomeDir()
@@ -119,32 +114,31 @@ func listModules() ([]moduleLoc, error) {
 		log.Fatalln(err)
 	}
 
-	var modules []moduleLoc
+	var modules []string
 	filepath.WalkDir(config_dir, func(path string, info fs.DirEntry, err error) error {
 		if info != nil && !info.IsDir() && strings.HasSuffix(path, ".jq") {
 			relpath, err := filepath.Rel(config_dir, path)
 			if err != nil {
 				return err
 			}
-			modules = append(modules, moduleLoc{
-				relpath[:len(relpath)-3],
-				filepath.Join(config_dir, relpath),
-			})
+			modules = append(modules,
+				relpath,
+				// filepath.Join(config_dir, relpath),
+			)
 		}
 		return nil
 	})
 
 	builtins := listBuiltins()
 	for _, builtin := range builtins {
-		for _, b := range modules {
-			if b.name == builtin {
+		for _, m := range modules {
+			if m == builtin {
 				continue
 			}
 		}
-		modules = append(modules, moduleLoc{
-			builtin,
+		modules = append(modules,
 			filepath.Join("builtin/", builtin),
-		})
+		)
 	}
 	return modules, nil
 }

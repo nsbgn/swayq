@@ -78,6 +78,7 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, s
 		gojq.WithInputIter(inputIter),
 		gojq.WithFunction("debug", 0, 0, funcDebug),
 		gojq.WithFunction("stderr", 0, 0, funcStderr),
+		gojq.WithIterFunction("modules", 0, 0, funcModules),
 		gojq.WithIterFunction("sleep", 1, 1, funcSleep),
 		gojq.WithIterFunction("_ipc", 4, 4, funcIpc),
 		gojq.WithIterFunction("exec", 1, 1, funcExec),
@@ -176,4 +177,27 @@ func funcSleep(v any, xs []any) gojq.Iter {
 	}
 	time.Sleep(time.Duration(s) * time.Second)
 	return gojq.NewIter()
+}
+
+type moduleIter struct {
+	i *int
+	modules *[]string
+}
+
+func (iter moduleIter) Next() (any, bool) {
+	if *iter.i < len(*iter.modules) {
+		val := (*iter.modules)[*iter.i]
+		*iter.i += 1
+		return val, true
+	}
+	return nil, false
+}
+
+func funcModules(_ any, _ []any) gojq.Iter {
+	modules, err := listModules()
+	if err != nil {
+		return gojq.NewIter(err)
+	}
+	i := 0
+	return moduleIter{&i, &modules}
 }

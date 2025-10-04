@@ -62,7 +62,8 @@ You can write a filter to execute a command:
     .container.name // empty
 
 The first argument to the program is the module to load. If none is 
-provided, an overview of available modules is shown.
+provided, `index` is chosen, which provides overview of available 
+modules.
 
 Modules are searched in `~/.config/swayq` and `~/.jq`. Please view the 
 files in [`builtin/`](./builtin/) for detailed information on the 

@@ -14,20 +14,19 @@
 -   An `eval/1` internal function is provided that can evaluate filters 
     given as an array of strings. Crucially, these filters can be run in 
     parallel.
--   A `sleep/1` internal function is provided that does nothing
+-   A `sleep/1` internal function is provided for timeouts.
+-   A `modules/0` internal function is provided that enumerates all the 
+    available modules.
 -   The `debug` builtin has been enabled.
 -   The `stderr` builtin has been enabled.
 -   The `input{,s}` builtins have been enabled for reading from stdin.
 -   The `-R` flag toggles between raw and JSON input.
--   There is no longer a default module loaded. Instead, running `swayq` 
-    without arguments will produce an overview of available modules.
+-   The default module is now `index`, and so, running `swayq` without 
+    arguments will produce an overview of available modules.
 -   Rudimentary shell completions.
 -   Positional arguments are now available in the `$ARGS` variable, in 
     the same format as stock `jq`. Named arguments are also parsed and 
     passed through.
--   **Breaking:** You must now always provide a module. Running `swayq` 
-    on its own gives an error message and will eventually list available 
-    modules.
 -   **Breaking:** The project has been renamed to `swayq`.
 -   **Breaking:** Modules are now only found in `$XDG_CONFIG_DIR/swayq` 
     and in `$HOME/.jq`, not anywhere else. 

@@ -2,7 +2,7 @@
 # Crude bash completion script. Only does filenames for now.
 
 _modules() {
-  SWAYQ_COMPLETIONS=1 swayq
+  swayq completions
 }
 
 _swayq_completions() {
