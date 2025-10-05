@@ -2,5 +2,4 @@ module {
   name: "completions"
 };
 
-modules |
-capture("(?<name>.+)\\.jq$").name // .
+modules | .name

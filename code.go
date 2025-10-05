@@ -181,7 +181,7 @@ func funcSleep(v any, xs []any) gojq.Iter {
 
 type moduleIter struct {
 	i *int
-	modules *[]string
+	modules *[]map[string]any
 }
 
 func (iter moduleIter) Next() (any, bool) {

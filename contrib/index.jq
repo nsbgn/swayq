@@ -5,6 +5,7 @@ module {
 
 "Available modules:",
 ( modules |
+  .name |
   (capture("(?<name>.+)\\.jq$").name // .) as $name |
   modulemeta |
   "\u001b[1m\($name)\u001b[0m",
