@@ -17,3 +17,7 @@ def get_config: _ipc($SOCK; 9; null; false);
 def send_tick($payload): _ipc($SOCK; 10; $payload; false);
 def sync($payload): _ipc($SOCK; 11; $payload; false);
 def get_binding_state($payload): _ipc($SOCK; 12; $payload; false);
+
+# Sway-specific
+def get_inputs: _ipc($SOCK; 100; null; false);
+def get_seats: _ipc($SOCK; 101; null; false);

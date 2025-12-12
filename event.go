@@ -17,8 +17,10 @@ const (
 	eventBinding = 5
 	eventShutdown = 6
 	eventTick = 7
+	eventBarStateUpdate = 20
+	eventInput = 21
 )
-const eventN = 8
+const eventN = 10
 
 func (t eventType) String() string {
 	switch t {
@@ -38,6 +40,10 @@ func (t eventType) String() string {
 		return "shutdown"
 	case eventTick:
 		return "tick"
+	case eventBarStateUpdate:
+		return "bar_state_update"
+	case eventInput:
+		return "input"
 	default:
 		panic("invalid eventType")
 	}
@@ -61,6 +67,10 @@ func eventFromString(t string) (eventType, error) {
 		return eventShutdown, nil
 	case "tick":
 		return eventTick, nil
+	case "bar_state_update":
+		return eventBarStateUpdate, nil
+	case "input":
+		return eventInput, nil
 	default:
 		msg := fmt.Sprintf("unknown event string %v", t)
 		return eventWorkspace, errors.New(msg)
