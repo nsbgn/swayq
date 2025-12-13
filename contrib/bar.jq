@@ -4,14 +4,23 @@ import "util" as util;
 import "workspace" as ws;
 import "icon" as icon;
 import "color" as color;
+import "xkb" as xkb;
 
 def click_handler:
   inputs |
   sub("^,"; "") |
   try (
     fromjson |
-    if .name == "taskbar" and .button == 1 then
-      ipc::run_command("[con_id=\(.instance)] focus")
+    if .name == "taskbar" then
+      if .button == 1 then
+        ipc::run_command("[con_id=\(.instance)] focus")
+      elif .button == 3 then
+        ipc::run_command("exec dmenu-window")
+      else
+        empty
+      end
+    elif .name == "xkb" and .button == 1 then
+      ipc::run_command("input type:keyboard xkb_switch_layout next")
     elif .name == "workspace" and .button == 1 then
       ipc::run_command("workspace \(.instance)")
     elif .name == "pulseaudio" then
@@ -154,6 +163,10 @@ def pulseaudio:
     pulseaudio_once
   );
 
+def xkb:
+  xkb::current, xkb::listen |
+  [{name: "xkb", full_text: .}];
+
 def date:
   now | strflocaltime("%Y-%m-%d %H:%M") |
   [{full_text: .}],
@@ -196,7 +209,7 @@ def tasks:
 "[[],",
 (
   # Create filters
-  ["click_handler", "tasks", "pulseaudio", "battery", "date"] |
+  ["click_handler", "tasks", "xkb", "pulseaudio", "battery", "date"] |
   [ . as $args | range(length) | . as $i |
     $args[.] | "\(.) | {channel: \($i), content: .}"] |
 
