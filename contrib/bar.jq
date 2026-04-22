@@ -178,11 +178,23 @@ def tasks:
   if $bar_id == null then "No bar id given" | error end |
   ipc::get_bar_config($bar_id) as $cfg |
   if $cfg.error then "Could not find bar" | error end |
+
+  # Which output(s) are associated with this bar?
+  $cfg.outputs[] as $bar_output |
+
+  # What is the name of that output as it would appear in the tree?
+  (ipc::get_outputs[] | 
+    if $bar_output == ("\(.make) \(.model) \(.serial)", .name) then
+      .name
+    else
+      empty
+    end) as $output_name |
+
   ipc::subscribe(["workspace", "window", "tick"]) |
   ipc::get_tree |
   [
     .nodes[] |
-    select(.name == $cfg.outputs[]) |
+    select(.name == $output_name) |
     (
       .focus[0] as $focus |
       .nodes[],
