@@ -73,7 +73,15 @@ func findModulePath(name string) (string, error) {
 		return name, nil
 	}
 
-	if !strings.HasSuffix(name, ".jq") {
+	if strings.HasSuffix(name, ".jq") {
+		working_dir, err := os.Getwd()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if path, found := findModuleAt(name, working_dir); found {
+			return path, nil
+		}
+	} else {
 		name = name + ".jq"
 	}
 
