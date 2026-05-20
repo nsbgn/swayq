@@ -5,7 +5,7 @@ module {
 
 import "tiling" as tiling;
 
-def fibonacci: {
+def schema: {
   layout: "splith",
   subschemas: [
     { name: "head",
@@ -37,4 +37,4 @@ def fibonacci: {
   ]
 };
 
-tiling::main(fibonacci)
+tiling::main(schema)

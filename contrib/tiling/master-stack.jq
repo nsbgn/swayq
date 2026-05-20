@@ -5,7 +5,7 @@ module {
 
 import "tiling" as tiling;
 
-def masterstack: {
+def schema: {
   layout: "splith",
   subschemas: [
     { name: "stack",
@@ -19,4 +19,4 @@ def masterstack: {
   ]
 };
 
-tiling::main(masterstack)
+tiling::main(schema)
