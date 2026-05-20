@@ -60,8 +60,20 @@ func (l *swayqModuleLoader) LoadModule(name string) (*gojq.Query, error) {
 	return query, nil
 }
 
-func findModuleAt(filename string, dir string) (string, bool) {
-	path := filepath.Join(dir, filename)
+func findModuleAt(name string, dir string) (string, bool) {
+	path := filepath.Join(dir, name)
+	if !strings.HasSuffix(path, ".jq") {
+		path = path + ".jq"
+	}
+	if _, err := os.Stat(path); err == nil {
+		return path, true
+	}
+
+	// also accept a/b/b.jq, cf <https://jqlang.org/manual/#modules>
+	path = filepath.Join(dir, name, filepath.Base(name))
+	if !strings.HasSuffix(path, ".jq") {
+		path = path + ".jq"
+	}
 	if _, err := os.Stat(path); err == nil {
 		return path, true
 	}
@@ -81,8 +93,6 @@ func findModulePath(name string) (string, error) {
 		if path, found := findModuleAt(name, working_dir); found {
 			return path, nil
 		}
-	} else {
-		name = name + ".jq"
 	}
 
 	home, err := os.UserHomeDir()
@@ -129,9 +139,18 @@ func listModules() ([]map[string]any, error) {
 			if err != nil {
 				return err
 			}
+
+			name := relpath[:len(relpath)-3]
+
+			// if path is <module/sub/sub.jq>, shorten to <module/sub>
+			dir := filepath.Dir(name)
+			if filepath.Base(name) == filepath.Base(dir) {
+				name = dir
+			}
+
 			modules = append(modules,
 				map[string]any{
-					"name": relpath[:len(relpath)-3],
+					"name": name,
 					"location": filepath.Join(config_dir, relpath),
 				},
 			)
