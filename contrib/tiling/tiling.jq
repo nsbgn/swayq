@@ -273,7 +273,7 @@ def apply_layout:
 def apply_container_arrangement:
   # What are the child containers we expect of this representative?
   if .subschemas then
-    .subschemas | map(.representative)
+    .subschemas | map(.representative // .windows[])
   else
     .windows
   end as $ideal |
