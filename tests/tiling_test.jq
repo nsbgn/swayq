@@ -1,6 +1,17 @@
 import "builtin/ipc" as ipc;
 import "builtin/con" as con;
 import "tree" as tree;
+import "tiling" as tiling;
+import "tiling/fibonacci" as fib;
+import "tiling/master-stack" as ms;
+
+def inspect:
+  { capacity,
+    occupancy,
+    insert,
+    representative: .representative.id,
+    windows: [.windows[]? | .id],
+    subschemas: [.subschemas[]? | inspect]};
 
 def create_windows($n):
     (range($n) |
@@ -9,8 +20,8 @@ def create_windows($n):
 ;
 
 def poc_test:
-    (ipc::get_tree | tree::show | stderr),
     create_windows(3),
-    ("* * *" | stderr),
+    tiling::apply(fib::schema),
+    sleep(0.3),
     (ipc::get_tree | tree::show | stderr)
 ;
