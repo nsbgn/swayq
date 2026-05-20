@@ -171,11 +171,15 @@ func funcStderr(v any, _ []any) any { // FIXME
 }
 
 func funcSleep(v any, xs []any) gojq.Iter {
-	s, ok := xs[0].(int)
+	si, ok := xs[0].(int)
 	if !ok {
-		return gojq.NewIter(errors.New("sleep must have an integer argument"))
+		sf, ok := xs[0].(float64)
+		if !ok {
+			return gojq.NewIter(errors.New("sleep must have an integer or floating point argument"))
+		}
+		time.Sleep(time.Duration(sf) * time.Second)
 	}
-	time.Sleep(time.Duration(s) * time.Second)
+	time.Sleep(time.Duration(si) * time.Second)
 	return gojq.NewIter()
 }
 
