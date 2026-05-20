@@ -1,3 +1,8 @@
+module {
+  name: "color",
+  summary: "Color calculations."
+};
+
 def white: "#ffffff";
 def black: "#000000";
 

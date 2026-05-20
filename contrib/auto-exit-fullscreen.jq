@@ -1,4 +1,8 @@
-# Automatically exit full screen mode when a new window opens
+module {
+  name: "auto-exit-fullscreen",
+  summary: "Automatically exit full screen mode when a new window opens."
+};
+
 # Inspired by <https://old.reddit.com/r/swaywm/comments/vclww6/exit_fullscreen_when_new_window_opens/>
 
 import "builtin/ipc" as ipc;

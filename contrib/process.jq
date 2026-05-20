@@ -1,6 +1,6 @@
 module {
   name: "process",
-  description: "Add process information to the layout tree"
+  summary: "Add process information to the layout tree."
 };
 
 import "builtin/ipc" as ipc;

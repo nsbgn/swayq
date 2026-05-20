@@ -1,6 +1,6 @@
 module {
   name: "fibonacci",
-  description: "The fibonacci tiling layout."
+  summary: "The fibonacci tiling layout."
 };
 
 import "tiling" as tiling;

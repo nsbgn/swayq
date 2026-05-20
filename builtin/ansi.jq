@@ -1,6 +1,6 @@
 module {
   name: "ansi",
-  description: "ANSI escape codes."
+  summary: "ANSI escape codes."
 };
 
 # <https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters>

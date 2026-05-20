@@ -1,6 +1,6 @@
 module {
   name: "master-stack",
-  description: "The classic master-stack tiling layout." 
+  summary: "The classic master-stack tiling layout." 
 };
 
 import "tiling" as tiling;

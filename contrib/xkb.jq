@@ -1,3 +1,8 @@
+module {
+  name: "xkb",
+  summary: "View or monitor the current keyboard layout."
+};
+
 import "builtin/ipc" as ipc;
 
 def current:

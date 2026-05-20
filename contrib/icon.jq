@@ -1,3 +1,8 @@
+module {
+  name: "icon",
+  summary: "Map glyphs from icon fonts to app_ids."
+};
+
 def icon:
   .app_id |
   if . == null then

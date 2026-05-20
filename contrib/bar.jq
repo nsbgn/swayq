@@ -1,3 +1,8 @@
+module {
+  name: "bar",
+  summary: "Scripts for swaybar or i3bar."
+};
+
 import "builtin/ipc" as ipc;
 import "builtin/con" as con;
 import "util" as util;

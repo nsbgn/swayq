@@ -1,6 +1,6 @@
 module {
   name: "index",
-  description: "Provide an index of available modules."
+  summary: "Provide an index of available modules."
 };
 
 "Available modules:",
@@ -8,9 +8,9 @@ module {
   .name |
   (capture("(?<name>.+)\\.jq$").name // .) as $name |
   modulemeta |
-  "\u001b[1m\($name)\u001b[0m",
-  if .description then
-    "\t\(.description)"
+  "\u001b[1m\($name)\u001b[0m" +
+  if .summary then
+    "\t\(.summary)"
   else
     empty
   end

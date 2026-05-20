@@ -1,6 +1,6 @@
 module {
   name: "util",
-  description: "Utility functions."
+  summary: "A library of utility functions."
 };
 
 # The first index so that the corresponding array item satisfies the condition

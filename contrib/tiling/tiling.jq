@@ -1,6 +1,6 @@
 module {
   name: "tiling",
-  description: "Seamless and customizable dynamic tiling.",
+  summary: "Seamless and customizable dynamic tiling.",
 };
 
 # Arrange a workspace or container into an overflow-layout. This is a subtler

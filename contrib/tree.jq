@@ -1,6 +1,6 @@
 module {
   name: "tree",
-  description: "A module to show a readable ASCII visualisation of the layout tree."
+  summary: "A module to show a readable ASCII visualisation of the layout tree."
 };
 
 # cf. <https://en.wikipedia.org/wiki/Box_Drawing>

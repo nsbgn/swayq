@@ -1,6 +1,6 @@
 module {
   name: "workspace",
-  description: "Page through existing workspaces and the first empty workspace."
+  summary: "Page through existing workspaces and the first empty workspace."
 };
 
 # Previous solutions: <https://www.reddit.com/r/swaywm/comments/qo9uxr/always_having_an_empty_workspace/>

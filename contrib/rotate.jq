@@ -1,6 +1,6 @@
 module {
   name: "rotate",
-  description: "Rotate the active display."
+  summary: "Rotate the active display."
 };
 
 import "builtin/ipc" as ipc;

@@ -1,6 +1,6 @@
 module {
   name: "ipc",
-  description: "Filters for inter-process communication (IPC) as defined in <https://i3wm.org/docs/ipc.html>."
+  summary: "Filters for inter-process communication (IPC) as defined in <https://i3wm.org/docs/ipc.html>."
 };
 
 def run_command($payload): _ipc($SOCK; 0; $payload; false);
