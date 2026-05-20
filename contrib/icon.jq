@@ -1,15 +1,18 @@
 def icon:
-  if .app_id == "org.mozilla.firefox" then
+  .app_id |
+  if . == null then
+    ""
+  elif . == "org.mozilla.firefox" then
     ""
-  elif .app_id == "org.qutebrowser.qutebrowser" then
+  elif . == "org.qutebrowser.qutebrowser" then
     ""
-  elif .app_id == "Alacritty" or (.app_id | startswith("foot")) then
+  elif . == "Alacritty" or startswith("foot") then
     ""
-  elif .app_id == "org.nicotine_plus.Nicotine" then
+  elif . == "org.nicotine_plus.Nicotine" then
     ""
-  elif .app_id == "signal" then
+  elif . == "signal" then
     ""
-  elif .app_id == "" then
+  elif . == "" then
     ""
   else
     ""
