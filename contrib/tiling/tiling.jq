@@ -321,41 +321,48 @@ def run(commands):
   end;
 
 
-def apply($schema):
+# Populate the abstract schema with concrete data from the container to which
+# it should be applied.
+def extend_schema($con):
+  . as $schema |
+  $con |
+  [con::leaves] as $windows |
+  # The first representative is the existing first child of the workspace
+  .nodes[0] as $root_repr |
+  $schema |
+  assign_defaults |
+  assign_capacity |
+  assign_windows($windows) |
+  assign_representative($root_repr);
 
-  def apply_recursively:
-    apply_insertion_marks,
-    apply_layout,
-    apply_container_arrangement,
-    (.subschemas[]? | select(.occupancy > 0) | apply_recursively);
 
+def apply_schema:
+  apply_insertion_marks,
+  apply_layout,
+  apply_container_arrangement,
+  (.subschemas[]? | select(.occupancy > 0) | apply_schema);
+
+
+def tile($schema):
   ipc::get_tree |
-  con::focused(.type == "workspace") |
-
+  con::focused(.type == "workspace") as $con |
   run(
     # If the workspace is empty, we only make sure that any new window opened
     # won't appear in some other workspace.
-    if .nodes == [] then
+    if $con.nodes == [] then
       "unmark \(SWAP)",
       "unmark \(INSERT)"
     else
-      [con::leaves] as $windows |
-      # The first representative is the already existing first child of the
-      # workspace
-      .nodes[0] as $repr |
       $schema |
-      assign_defaults |
-      assign_capacity |
-      assign_windows($windows) |
-      assign_representative($repr) |
-      apply_recursively
+      extend_schema($con) |
+      apply_schema
     end);
 
 
 ###############################################################################
 # Main loop
 
-def init:
+def init_insertion_marks:
   # To instantly put new tiling windows where they belong, without a moment of
   # flickering as the script responds to events, we start by putting in place
   # rules to insert new windows after the window with the `INSERT` mark. To put
@@ -366,8 +373,8 @@ def init:
   "unmark \(SWAP)";
 
 def main($initial_schema):
-  run(init),
-  apply($initial_schema),
+  run(init_insertion_marks),
+  tile($initial_schema),
   foreach ipc::subscribe(["workspace", "window", "tick"]) as $e (
     $initial_schema;
     .;
@@ -377,7 +384,7 @@ def main($initial_schema):
     . as $schema |
     if ($e.event == "window" and any("new", "close", "focus"; $e.change == .))
         or ($e.event == "workspace" and $e.change == "focus") then
-      apply($schema)
+      tile($schema)
     else
       empty
     end
