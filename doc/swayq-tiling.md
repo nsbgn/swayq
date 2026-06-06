@@ -45,26 +45,46 @@ master-stack layout looks like this:
 The following section describes the keys of a schema.
 
 `subschemas`
-: A list of one or more schemas. If a schema has subschemas, then the 
-  corresponding container will be split up into multiple containers, 
-  each of which follows the corresponding schema. If this key is absent, 
-  then all windows assigned to the schema will be direct children of the 
-  corresponding container.
-
-`priority`
-: A number indicating the order in which containers will be filled.
+: A list of one or more schemas. If this key is absent, then all windows 
+assigned to the schema will be direct children of the corresponding 
+container. Otherwise, a container will be spawned that is further split 
+into one container for each subschema mentioned here.
 
 `layout`
-: A string corresponding to the i3 layout variants `splitv`, `splith`, 
-  `tabbed` and `stacked`. Defaults to `splith`.
+: `"splitv"` | `"splith"` | `"tabbed"` | `"stacked"`. A string 
+  corresponding to the i3 layout variants. Defaults to `"splith"`.
 
 `capacity`
-: A number indicating how many leaf windows can be accommodated by the 
-  schema. If subschemas are specified, the capacity is the sum of 
-  capacities of the subschemas. Otherwise, this defaults to 1.
+: A number indicating how many leaf windows can be accommodated. If 
+  subschemas are specified, the capacity is the sum of capacities of 
+  those subschemas. Otherwise, this defaults to 1.
 
-`reverse`
-: A boolean. If the capacity of a schema is greater than 1 but there are 
-  no subschemas, then new windows added to this container will appear at 
-  the end. If this boolean is set to true, then they will appear at the 
-  beginning instead.
+`insert-target`
+: `"priority"` | `"focus"`. New windows assigned to this schema will be 
+  distributed either according to a user-determined, static priority, or 
+  the dynamically changing focus list. Defaults to `"priority"`. 
+
+`insert-position`
+: `"before"` | `"after"`. Defaults to `"after"`, so that, in the absence 
+  of subschemas, new windows assigned to this schema will appear after 
+  the last window (if `insert-target` is `"priority"`) or after the 
+  focused window (if `insert-target` is `"focus"`). If this value is 
+  changed to `"before"`, then they will instead appear before the first 
+  window or before the focused window, respectively.
+
+`priority`
+: A number indicating the order in which containers will be filled. The 
+  lower the number, the sooner the container is filled. If multiple 
+  containers have the same priority, new windows will be distributed 
+  over them evenly. Defaults to `0`.
+
+<!--
+`overflow`
+: `"scratchpad"` | `"new"` | `"noop"`
+
+`inherit`
+: A boolean.
+
+`rotate`
+: `0` | `90` | `180` | `270`.
+-->
