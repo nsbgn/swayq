@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os/exec"
 	"bufio"
+	"strings"
 
 	"github.com/itchyny/gojq"
 )
@@ -29,10 +30,10 @@ func (iter execIter) Next() (any, bool) {
 	return nil, false
 }
 
-func funcExec(_ any, xs []any) gojq.Iter {
+func funcExec(input any, xs []any) gojq.Iter {
 	argsArrayAny, ok := xs[0].([]any)
 	if !ok {
-		return gojq.NewIter(errors.New("exec expects array input"))
+		return gojq.NewIter(errors.New("exec expects array argument"))
 	}
 
 	argsArrayStr := make([]string, len(argsArrayAny))
@@ -45,6 +46,11 @@ func funcExec(_ any, xs []any) gojq.Iter {
 	}
 
 	cmd := exec.Command(argsArrayStr[0], argsArrayStr[1:]...)
+	inputStr, ok := input.(string)
+	if ok {
+		// Non-string input is simply ignored
+		cmd.Stdin = strings.NewReader(inputStr)
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
