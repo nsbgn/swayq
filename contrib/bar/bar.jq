@@ -21,7 +21,7 @@ def handle_click_events:
 },
 "[[],",
 (
-  ["tasks", "xkb", "pulseaudio", "battery", "date"] |
+  ["librelinkup", "tasks", "xkb", "pulseaudio", "battery", "date"] |
   to_entries |
   map("include \"bar/\(.value)\"; blocks | {channel: \(.key), content: map(.name = \"\(.value)\")}") |
   foreach eval(["handle_click_events"] + .) as $x (
