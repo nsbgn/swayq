@@ -84,9 +84,26 @@ func compile(query *gojq.Query, loader gojq.ModuleLoader, inputIter gojq.Iter, s
 		gojq.WithIterFunction("exec", 1, 1, funcExec),
 		gojq.WithIterFunction("eval", 1, 1, func (x any, xs []any) gojq.Iter {
 
+			// If we get a string, we just evaluate and are done with it
+			xsStr, ok := xs[0].(string)
+			if ok {
+				query, err := gojq.Parse(xsStr)
+				if err != nil {
+					return gojq.NewIter(err)
+				}
+				code, err := compile(query, loader, inputIter, socket, varArgs)
+				if err != nil {
+					return gojq.NewIter(err)
+				}
+
+				return code.Run(x, socket, varArgs)
+			}
+
+			// If we get an array, we evaluate all constituent strings in
+			// parallel
 			xsArray, ok := xs[0].([]any)
 			if !ok {
-				return gojq.NewIter(errors.New("eval expects an array"))
+				return gojq.NewIter(errors.New("eval expects an array or a string"))
 			}
 
 			ch := make(chan any)
