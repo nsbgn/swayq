@@ -1,6 +1,5 @@
 module {
-  name: "bar",
-  summary: "Scripts for swaybar or i3bar."
+  name: "bar/tasks"
 };
 
 import "builtin/ipc" as ipc;
@@ -9,37 +8,6 @@ import "util" as util;
 import "workspace" as ws;
 import "icon" as icon;
 import "color" as color;
-import "xkb" as xkb;
-
-def click_handler:
-  inputs |
-  sub("^,"; "") |
-  try (
-    fromjson |
-    if .name == "taskbar" then
-      if .button == 1 then
-        ipc::run_command("[con_id=\(.instance)] focus")
-      elif .button == 3 then
-        ipc::run_command("exec dmenu-window")
-      else
-        empty
-      end
-    elif .name == "xkb" and .button == 1 then
-      ipc::run_command("input type:keyboard xkb_switch_layout next")
-    elif .name == "workspace" and .button == 1 then
-      ipc::run_command("workspace \(.instance)")
-    elif .name == "pulseaudio" then
-      if .button == 1 then
-        ipc::run_command("exec pactl set-sink-mute @DEFAULT_SINK@ toggle")
-      elif .button == 4 then
-        ipc::run_command("exec pactl set-sink-volume @DEFAULT_SINK@ +2%")
-      elif .button == 5 then
-        ipc::run_command("exec pactl set-sink-volume @DEFAULT_SINK@ -2%")
-      end
-    else
-      ipc::run_command("exec notify-send \(.button)")
-    end
-  ) catch empty;
 
 def title:
   .name | sub(" — Mozilla Firefox"; "")
@@ -61,7 +29,6 @@ def marks:
 def workspace($is_focus_ws; $color):
   . as $ws |
   {
-    name: "workspace",
     instance: "\(.num)",
     full_text: " <small>\(.num):</small>",
     markup: "pango",
@@ -83,7 +50,6 @@ def workspace($is_focus_ws; $color):
           border: $color.inactive_workspace_border }
       end +
       {
-        name: "workspace",
         instance: "\($ws.num)",
         full_text: "\u2731",
         separator: false,
@@ -107,7 +73,6 @@ def workspace($is_focus_ws; $color):
           border: $color.inactive_workspace_border }
       end +
       {
-        name: "taskbar",
         instance: "\(.id)",
         markup: "pango",
         full_text: " \(icon::icon)  \(title | util::truncate(20))\(marks)",
@@ -117,66 +82,6 @@ def workspace($is_focus_ws; $color):
     end
   )
 ;
-
-def battery:
-  [ exec(["acpi", "-b"]) |
-    capture("(?<state>(Not charging|Charging|Discharging)), (?<charge>[0-9]+)%") |
-    if .state == "Not charging" then
-      "\uf1e6"
-    elif .state == "Charging" then
-      "\uf0e7"
-    else
-      .charge | tonumber |
-      if   . > 75 then 0
-      elif . > 65 then 1
-      elif . > 50 then 2
-      elif . > 30 then 3
-      else 4 end |
-      [62016 + .] |
-      implode
-    end as $icon |
-    {full_text: "\($icon) \(.charge)"}
-    
-  ],
-  sleep(100),
-  battery;
-
-def mute:
-  first(exec(["pactl", "get-sink-mute", "@DEFAULT_SINK@"])) |
-  capture("Mute: (?<mute>(yes|no))") |
-  (.mute == "yes");
-
-def volume:
-  first(exec(["pactl", "get-sink-volume", "@DEFAULT_SINK@"])) |
-  capture("(?<volume>[0-9]+)%") |
-  .volume |
-  tonumber;
-
-def pulseaudio_once:
-  volume |
-  if mute then "\uf6a9"
-  elif . < 5 then "\uf026"
-  elif . < 50 then "\uf027"
-  else "\uf028"
-  end as $icon |
-  [{full_text: "\($icon) \(.)", name: "pulseaudio"}];
-
-def pulseaudio:
-  pulseaudio_once,
-  ( exec(["pactl", "subscribe"]) |
-    select(test("sink")) |
-    pulseaudio_once
-  );
-
-def xkb:
-  xkb::current, xkb::listen |
-  [{name: "xkb", full_text: .}];
-
-def date:
-  now | strflocaltime("%Y-%m-%d %H:%M") |
-  [{full_text: .}],
-  sleep(15),
-  date;
 
 def tasks:
   $ARGS.positional[0] as $bar_id |
@@ -218,25 +123,14 @@ def tasks:
   ];
 
 
-# Generate strings in the form of the swaybar protocol
-{
-  "version": 1,
-  "click_events": true
-},
-"[[],",
-(
-  # Create filters
-  ["click_handler", "tasks", "xkb", "pulseaudio", "battery", "date"] |
-  [ . as $args | range(length) | . as $i |
-    $args[.] | "\(.) | {channel: \($i), content: .}"] |
+def blocks:
+  tasks;
 
-  # Evaluate all filters in parallel
-  foreach eval(.) as $x (
-      [range(length) | []];
-      .[$x.channel] = $x.content;
-      .[1:] |
-      flatten |
-      tostring + ","
-  )
-),
-"]"
+def onclick:
+  if .button == 1 then
+    ipc::run_command("[con_id=\(.instance)] focus")
+  elif .button == 3 then
+    ipc::run_command("exec dmenu-window")
+  else
+    empty
+  end;
