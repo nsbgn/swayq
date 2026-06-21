@@ -38,3 +38,8 @@ def truncate($n):
   if length > $n then
     "\(.[0:$n / 2 | floor])…\(.[-($n / 2 | ceil) + 1:])"
   end;
+
+# cf. <https://stackoverflow.com/a/70483232>
+def deregex:
+  reduce ("\\\\", "\\*", "\\^", "\\?", "\\+", "\\.", "\\!", "\\{", "\\}", "\\[", "\\]", "\\$", "\\|", "\\(", "\\)" ) as $c 
+    (.; gsub( $c; $c));
